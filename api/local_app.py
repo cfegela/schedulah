@@ -61,5 +61,89 @@ def item(item_id):
     )
 
 
+@app.route('/items/<item_id>/availability', methods=['GET', 'POST', 'OPTIONS'])
+def availability(item_id):
+    if request.method == 'OPTIONS':
+        return '', 204
+
+    event = create_lambda_event(
+        request.method,
+        f'/items/{item_id}/availability',
+        request.data.decode('utf-8') if request.data else None,
+        {'id': item_id}
+    )
+
+    lambda_response = handler(event, None)
+
+    return (
+        lambda_response['body'],
+        lambda_response['statusCode'],
+        lambda_response['headers']
+    )
+
+
+@app.route('/items/<item_id>/availability/<date>', methods=['DELETE', 'OPTIONS'])
+def availability_date(item_id, date):
+    if request.method == 'OPTIONS':
+        return '', 204
+
+    event = create_lambda_event(
+        request.method,
+        f'/items/{item_id}/availability/{date}',
+        request.data.decode('utf-8') if request.data else None,
+        {'id': item_id, 'date': date}
+    )
+
+    lambda_response = handler(event, None)
+
+    return (
+        lambda_response['body'],
+        lambda_response['statusCode'],
+        lambda_response['headers']
+    )
+
+
+@app.route('/items/<item_id>/reservations', methods=['GET', 'POST', 'OPTIONS'])
+def reservations(item_id):
+    if request.method == 'OPTIONS':
+        return '', 204
+
+    event = create_lambda_event(
+        request.method,
+        f'/items/{item_id}/reservations',
+        request.data.decode('utf-8') if request.data else None,
+        {'id': item_id}
+    )
+
+    lambda_response = handler(event, None)
+
+    return (
+        lambda_response['body'],
+        lambda_response['statusCode'],
+        lambda_response['headers']
+    )
+
+
+@app.route('/items/<item_id>/reservations/<date>', methods=['DELETE', 'OPTIONS'])
+def reservation(item_id, date):
+    if request.method == 'OPTIONS':
+        return '', 204
+
+    event = create_lambda_event(
+        request.method,
+        f'/items/{item_id}/reservations/{date}',
+        request.data.decode('utf-8') if request.data else None,
+        {'id': item_id, 'date': date}
+    )
+
+    lambda_response = handler(event, None)
+
+    return (
+        lambda_response['body'],
+        lambda_response['statusCode'],
+        lambda_response['headers']
+    )
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

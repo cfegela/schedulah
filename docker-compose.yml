@@ -6,7 +6,10 @@ services:
     container_name: schedulah-dynamodb
     ports:
       - "8000:8000"
-    command: "-jar DynamoDBLocal.jar -sharedDb -inMemory"
+    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ./data"
+    user: "0:0"
+    volumes:
+      - ./dynamodb-data:/home/dynamodblocal/data
     networks:
       - schedulah-network
 
