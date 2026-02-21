@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  dynamodb-local:
+    image: amazon/dynamodb-local:latest
+    container_name: schedulah-dynamodb
+    ports:
+      - "8000:8000"
+    command: "-jar DynamoDBLocal.jar -sharedDb -inMemory"
+    networks:
+      - schedulah-network
+
+  dynamodb-init:
+    image: amazon/aws-cli:latest
+    container_name: schedulah-dynamodb-init
+    depends_on:
+      - dynamodb-local
+    environment:
+      - AWS_ACCESS_KEY_ID=dummy
+      - AWS_SECRET_ACCESS_KEY=dummy
+      - AWS_DEFAULT_REGION=us-east-1
+    volumes:
+      - ./scripts/init-dynamodb.sh:/init-dynamodb.sh
+    entrypoint: ["/bin/sh", "/init-dynamodb.sh"]
+    networks:
+      - schedulah-network
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: schedulah-api
+    ports:
+      - "5000:5000"
+    environment:
+      - DYNAMODB_ENDPOINT=http://dynamodb-local:8000
+      - AWS_ACCESS_KEY_ID=dummy
+      - AWS_SECRET_ACCESS_KEY=dummy
+      - AWS_DEFAULT_REGION=us-east-1
+    depends_on:
+      - dynamodb-local
+      - dynamodb-init
+    networks:
+      - schedulah-network
+
+  frontend:
+    image: nginx:alpine
+    container_name: schedulah-frontend
+    ports:
+      - "8080:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - api
+    networks:
+      - schedulah-network
+
+networks:
+  schedulah-network:
+    driver: bridge
