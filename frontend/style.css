@@ -570,11 +570,10 @@ tbody tr:hover {
     border-radius: 0.5rem;
     box-shadow: var(--shadow);
     overflow: hidden;
-    margin-top: 2rem;
 }
 
 .calendar-header {
-    padding: 1.5rem 2rem;
+    padding: 1rem 2rem;
     border-bottom: 1px solid var(--border);
     display: flex;
     justify-content: space-between;
@@ -687,6 +686,89 @@ tbody tr:hover {
 
 .calendar-reserve-link:hover {
     text-decoration: underline;
+}
+
+/* Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.modal-overlay.active {
+    display: flex;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 0.5rem;
+    box-shadow: var(--shadow-lg);
+    width: 90%;
+    max-width: 800px;
+    min-height: 750px;
+    max-height: 90vh;
+    position: relative;
+    overflow: hidden;
+}
+
+.modal-header {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0;
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+}
+
+.modal-close:hover {
+    color: var(--text-primary);
+}
+
+.modal-body {
+    padding: 0;
+}
+
+@media (max-width: 768px) {
+    .modal-content {
+        width: 95%;
+        max-height: 95vh;
+    }
+
+    .modal-header {
+        padding: 1rem 1.5rem;
+    }
+
+    .modal-header h3 {
+        font-size: 1.1rem;
+    }
 }
 
 .calendar-day.in-range {

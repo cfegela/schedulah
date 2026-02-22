@@ -888,7 +888,8 @@ async function renderItemView(itemId) {
                 <div class="item-view-header">
                     <h2 id="view-item-name"></h2>
                     <div class="item-view-actions">
-                        <a href="#/items/edit/${itemId}" class="btn btn-primary">Edit</a>
+                        <button onclick="openCalendarModal('${itemId}')" class="btn btn-primary">Check Availability</button>
+                        <a href="#/items/edit/${itemId}" class="btn btn-secondary">Edit</a>
                     </div>
                 </div>
 
@@ -898,6 +899,13 @@ async function renderItemView(itemId) {
                         <div id="view-item-description" class="item-view-value"></div>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Calendar Modal -->
+        <div id="calendar-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div id="calendar-container"></div>
             </div>
         </div>
     `;
@@ -931,9 +939,8 @@ async function loadItemDetails(itemId) {
         if (loadingDiv) loadingDiv.style.display = 'none';
         if (detailsDiv) detailsDiv.style.display = 'block';
 
-        // Initialize calendar
+        // Store item ID for calendar modal
         calendarState.itemId = itemId;
-        await renderCalendar(itemId);
 
     } catch (error) {
         if (loadingDiv) loadingDiv.style.display = 'none';
@@ -1372,50 +1379,54 @@ async function toggleAvailability(dateStr) {
 }
 
 // Calendar functions
-async function renderCalendar(itemId) {
-    const detailsDiv = document.getElementById('item-details');
+// Open calendar modal
+async function openCalendarModal(itemId) {
+    const modal = document.getElementById('calendar-modal');
+    if (!modal) return;
 
-    if (!detailsDiv) return;
+    modal.classList.add('active');
 
-    // Add calendar container if it doesn't exist
-    let calendarContainer = document.getElementById('calendar-container');
-    if (!calendarContainer) {
-        calendarContainer = document.createElement('div');
-        calendarContainer.id = 'calendar-container';
-        detailsDiv.appendChild(calendarContainer);
+    // Render calendar inside modal
+    const container = document.getElementById('calendar-container');
+    if (container) {
+        await renderCalendar(itemId);
     }
+}
+
+// Close calendar modal
+function closeCalendarModal() {
+    const modal = document.getElementById('calendar-modal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+}
+
+// Close modal when clicking outside
+document.addEventListener('click', (e) => {
+    const modal = document.getElementById('calendar-modal');
+    if (modal && e.target === modal) {
+        closeCalendarModal();
+    }
+});
+
+async function renderCalendar(itemId) {
+    const calendarContainer = document.getElementById('calendar-container');
+    if (!calendarContainer) return;
 
     // Render calendar HTML
     calendarContainer.innerHTML = `
         <div class="calendar-card">
-            <div class="calendar-header">
-                <h3>Availability Calendar</h3>
+            <div class="calendar-header" style="padding: 1rem 2rem; border-bottom: 1px solid var(--border); background-color: var(--bg-gray); display: flex; justify-content: space-between; align-items: center;">
+                <div style="width: 2rem;"></div>
                 <div class="calendar-nav">
                     <button class="calendar-nav-btn" onclick="navigateCalendar(-1)">Previous</button>
                     <span class="calendar-month-year" id="calendar-month-year"></span>
                     <button class="calendar-nav-btn" onclick="navigateCalendar(1)">Next</button>
                 </div>
+                <button class="modal-close" onclick="closeCalendarModal()" aria-label="Close">&times;</button>
             </div>
             <div class="calendar-body">
                 <div id="calendar-grid" class="calendar-grid"></div>
-            </div>
-            <div class="calendar-legend">
-                <div class="legend-item">
-                    <div class="legend-color available"></div>
-                    <span>Available to Reserve</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color reserved"></div>
-                    <span>Reserved / Unavailable</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color today"></div>
-                    <span>Today</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color selected"></div>
-                    <span>Selected</span>
-                </div>
             </div>
         </div>
     `;
