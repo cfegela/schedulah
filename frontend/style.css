@@ -712,10 +712,9 @@ tbody tr:hover {
     box-shadow: var(--shadow-lg);
     width: 90%;
     max-width: 800px;
-    min-height: 750px;
     max-height: 90vh;
     position: relative;
-    overflow: hidden;
+    overflow: auto;
 }
 
 .modal-header {
