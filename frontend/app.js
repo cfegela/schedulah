@@ -55,6 +55,15 @@ function initRouter() {
             }
         } else if (hash === '#/reservations') {
             renderReservations();
+        } else if (hash.startsWith('#/reservations/new/')) {
+            const parts = hash.split('/');
+            const itemId = parts[3];
+            const date = parts[4];
+            if (itemId && date) {
+                renderCreateReservation(itemId, date);
+            } else {
+                renderReservations();
+            }
         } else if (hash.startsWith('#/reservations/edit/')) {
             const parts = hash.split('/');
             const itemId = parts[3];
@@ -68,7 +77,7 @@ function initRouter() {
             const parts = hash.split('/');
             const itemId = parts[2];
             const date = parts[3];
-            if (itemId && date && parts[2] !== 'edit') {
+            if (itemId && date && parts[2] !== 'edit' && parts[2] !== 'new') {
                 renderViewReservation(itemId, date);
             } else {
                 renderReservations();
@@ -457,6 +466,128 @@ function displayReservations(reservations) {
         `;
         tbody.appendChild(row);
     });
+}
+
+// Render Create Reservation Page
+async function renderCreateReservation(itemId, date) {
+    const viewContainer = document.getElementById('view-container');
+
+    viewContainer.innerHTML = `
+        <div class="page-header">
+            <h1 class="page-title">Create Reservation</h1>
+            <a href="#/items/${itemId}" class="btn btn-secondary">← Back to Item</a>
+        </div>
+
+        <div id="loading" class="loading">Loading...</div>
+        <div id="error" class="error" style="display: none;"></div>
+
+        <div id="reservation-form-container" style="display: none;">
+            <div class="form-section">
+                <form id="create-reservation-form">
+                    <div class="form-group">
+                        <label>Item</label>
+                        <div id="item-name-display" style="padding: 10px 0; font-weight: 500;"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Date</label>
+                        <input type="text" value="${formatDateDisplay(date)}" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label for="reserved-by">Reserved By *</label>
+                        <input type="text" id="reserved-by" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="reservation-notes">Notes</label>
+                        <textarea id="reservation-notes" rows="4"></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Create Reservation</button>
+                        <a href="#/items/${itemId}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    `;
+
+    await loadItemForReservation(itemId, date);
+}
+
+// Load item details for creating reservation
+async function loadItemForReservation(itemId, date) {
+    const loadingDiv = document.getElementById('loading');
+    const errorDiv = document.getElementById('error');
+    const formContainer = document.getElementById('reservation-form-container');
+
+    try {
+        if (loadingDiv) loadingDiv.style.display = 'block';
+        if (errorDiv) errorDiv.style.display = 'none';
+
+        // Fetch item to get the name
+        const itemResponse = await fetch(`${API_BASE_URL}/items/${itemId}`);
+        if (!itemResponse.ok) {
+            throw new Error('Item not found');
+        }
+        const item = await itemResponse.json();
+
+        // Display item name
+        const itemNameDiv = document.getElementById('item-name-display');
+        if (itemNameDiv) {
+            itemNameDiv.textContent = item.name;
+        }
+
+        // Set up form submission
+        const form = document.getElementById('create-reservation-form');
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            await createReservation(itemId, date);
+        };
+
+        if (loadingDiv) loadingDiv.style.display = 'none';
+        if (formContainer) formContainer.style.display = 'block';
+
+    } catch (error) {
+        if (loadingDiv) loadingDiv.style.display = 'none';
+        if (errorDiv) {
+            errorDiv.textContent = error.message;
+            errorDiv.style.display = 'block';
+        }
+    }
+}
+
+// Create a new reservation
+async function createReservation(itemId, date) {
+    const reservedBy = document.getElementById('reserved-by').value.trim();
+    const notes = document.getElementById('reservation-notes').value.trim();
+
+    if (!reservedBy) {
+        alert('Reserved By is required');
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/items/${itemId}/reservations`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                dates: [date],
+                reservedBy,
+                notes
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.text();
+            throw new Error(error || 'Failed to create reservation');
+        }
+
+        // Redirect back to item view
+        window.location.hash = `#/items/${itemId}`;
+
+    } catch (error) {
+        alert('Error creating reservation: ' + error.message);
+    }
 }
 
 // Render View Reservation Page
@@ -1286,7 +1417,6 @@ async function renderCalendar(itemId) {
                     <span>Selected</span>
                 </div>
             </div>
-            <div id="reservation-form-container"></div>
         </div>
     `;
 
@@ -1382,7 +1512,6 @@ function renderCalendarGrid() {
 
         const dayCell = document.createElement('div');
         dayCell.className = 'calendar-day';
-        dayCell.textContent = day;
         dayCell.dataset.date = dateStr;
 
         // Determine cell state
@@ -1390,30 +1519,32 @@ function renderCalendarGrid() {
         const isToday = date.getTime() === today.getTime();
         const isAvailable = availableDatesSet.has(dateStr);
         const isReserved = reservedDates.has(dateStr);
-        const isSelected = selectedDates.includes(dateStr);
 
         if (isPast) {
             dayCell.classList.add('past');
-            dayCell.style.cursor = 'not-allowed';
+            dayCell.textContent = day;
         } else if (!isAvailable) {
             // Date is not marked as available in settings
             dayCell.classList.add('past');
-            dayCell.style.cursor = 'not-allowed';
             dayCell.title = 'Not available for reservations';
+            dayCell.textContent = day;
         } else if (isReserved) {
             dayCell.classList.add('reserved');
-            dayCell.style.cursor = 'not-allowed';
+            dayCell.textContent = day;
         } else {
+            // Available date - show date with reserve link
             dayCell.classList.add('available');
-            dayCell.onclick = () => toggleDateSelection(dateStr);
+            dayCell.innerHTML = `
+                <div style="font-size: 0.875rem; font-weight: 500; margin-bottom: 0.25rem;">${day}</div>
+                <a href="#/reservations/new/${calendarState.itemId}/${dateStr}"
+                   class="calendar-reserve-link">
+                    Reserve
+                </a>
+            `;
         }
 
         if (isToday) {
             dayCell.classList.add('today');
-        }
-
-        if (isSelected) {
-            dayCell.classList.add('selected');
         }
 
         gridContainer.appendChild(dayCell);
@@ -1434,112 +1565,6 @@ function navigateCalendar(direction) {
     calendarState.selectedDates = [];
     loadReservationsForMonth();
     hideReservationForm();
-}
-
-function toggleDateSelection(dateStr) {
-    const { selectedDates } = calendarState;
-
-    if (selectedDates.includes(dateStr)) {
-        // Deselect - clicking the same date again
-        calendarState.selectedDates = [];
-    } else {
-        // Select this date (replaces any previous selection)
-        calendarState.selectedDates = [dateStr];
-    }
-
-    renderCalendarGrid();
-
-    if (calendarState.selectedDates.length > 0) {
-        showReservationForm();
-    } else {
-        hideReservationForm();
-    }
-}
-
-function showReservationForm() {
-    const container = document.getElementById('reservation-form-container');
-    if (!container) return;
-
-    const { selectedDates } = calendarState;
-    const dateStr = selectedDates[0];
-    const displayDate = dateStr ? formatDateDisplay(dateStr) : '';
-
-    container.innerHTML = `
-        <div class="reservation-form">
-            <h4>Reserve ${displayDate}</h4>
-            <form id="reservation-form" onsubmit="handleReservationSubmit(event)">
-                <div class="form-group">
-                    <label for="reserved-by">Reserved By *</label>
-                    <input type="text" id="reserved-by" required>
-                </div>
-                <div class="form-group">
-                    <label for="reservation-notes">Notes (optional)</label>
-                    <textarea id="reservation-notes" rows="2"></textarea>
-                </div>
-                <div class="reservation-form-actions">
-                    <button type="submit" class="btn btn-primary">Create Reservation</button>
-                    <button type="button" class="btn btn-secondary" onclick="cancelReservation()">Cancel</button>
-                </div>
-            </form>
-        </div>
-    `;
-}
-
-function hideReservationForm() {
-    const container = document.getElementById('reservation-form-container');
-    if (container) {
-        container.innerHTML = '';
-    }
-}
-
-async function handleReservationSubmit(event) {
-    event.preventDefault();
-
-    const { selectedDates, itemId } = calendarState;
-    const reservedBy = document.getElementById('reserved-by').value.trim();
-    const notes = document.getElementById('reservation-notes').value.trim();
-
-    if (selectedDates.length === 0) {
-        alert('Please select a date');
-        return;
-    }
-
-    try {
-        const response = await fetch(`${API_BASE_URL}/items/${itemId}/reservations`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                dates: selectedDates,
-                reservedBy,
-                notes
-            })
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            if (error.failedDates) {
-                alert(`This date is already reserved`);
-            } else {
-                throw new Error(error.error || 'Failed to create reservation');
-            }
-        }
-
-        // Reset selection and reload
-        calendarState.selectedDates = [];
-        hideReservationForm();
-        await loadReservationsForMonth();
-
-    } catch (error) {
-        alert('Error creating reservation: ' + error.message);
-    }
-}
-
-function cancelReservation() {
-    calendarState.selectedDates = [];
-    hideReservationForm();
-    renderCalendarGrid();
 }
 
 // Helper functions
