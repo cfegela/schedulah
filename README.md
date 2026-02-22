@@ -19,13 +19,12 @@ schedulah/
 │   ├── Dockerfile          # API service Docker image
 │   ├── requirements.txt    # Python dependencies
 │   ├── handler.py          # AWS Lambda handler (deployable to AWS)
-│   └── local_app.py        # Flask wrapper for local development
+│   └── local_app.py        # Flask wrapper with auto table initialization
 ├── frontend/
 │   ├── index.html          # Main HTML page
 │   ├── app.js              # JavaScript application logic
 │   └── style.css           # Styling
-└── scripts/
-    └── init-dynamodb.sh    # DynamoDB table initialization script
+└── dynamodb-data/          # Persistent DynamoDB data storage
 ```
 
 ## Getting Started
@@ -55,9 +54,8 @@ schedulah/
 | Service | Port | Description |
 |---------|------|-------------|
 | `frontend` | 8080 | Nginx serving the static HTML/JS/CSS |
-| `api` | 5000 | Flask app wrapping the Lambda handler |
+| `api` | 5000 | Flask app wrapping the Lambda handler (auto-creates DynamoDB tables on startup) |
 | `dynamodb-local` | 8000 | Local DynamoDB instance with persistent storage |
-| `dynamodb-init` | - | One-shot container that creates DynamoDB tables |
 
 ## API Endpoints
 
@@ -121,18 +119,22 @@ All API requests are proxied through Nginx at `/api/*`:
 - **Responsive design** that works on desktop, tablet, and mobile
 - **Client-side routing** - no page reloads, instant navigation
 - **Browser back/forward** support with full history management
+- **Modal calendar** - Availability calendar opens in responsive modal popup
 - **Custom calendar UI** - Built from scratch without external libraries
 
 ### Item Management
 - **View items list** - Clean table with name, description, and icon actions
-- **View item details** - Dedicated page with item info and reservation calendar
+- **View item details** - Dedicated page with "Check Availability" button
+- **Check availability modal** - Click button to open calendar in responsive modal popup
 - **Create new items** - Dedicated form page with validation
-- **Edit existing items** - Pre-populated form with availability calendar
+- **Edit existing items** - Pre-populated form with inline availability calendar
 - **Set availability** - Interactive calendar to toggle available dates (green = available)
 - **Delete items** - Available on edit page in Danger Zone with confirmation
 
 ### Reservation Management
-- **Create reservations** - Click available dates on item view page, single-day reservations only
+- **Create reservations** - Click "Reserve" link on available dates in calendar modal
+- **Dedicated reservation form** - Separate page with item name, date, and reservation details
+- **Single-day reservations** - One date per reservation for simplicity
 - **View all reservations** - Table view showing date, item, reserved by, with view/edit icons
 - **View reservation details** - Dedicated page showing reservation information
 - **Edit reservations** - Update reserved by name and notes
@@ -142,10 +144,11 @@ All API requests are proxied through Nginx at `/api/*`:
 ### Technical Features
 - **RESTful API** with Python Lambda handlers (AWS-deployable)
 - **DynamoDB Local** with persistent storage across container restarts
+- **Automatic table initialization** - API creates tables on startup if they don't exist
 - **Three-table design** - Items, Reservations, AvailableDates with composite keys
 - **Date range queries** - Efficient DynamoDB queries with BETWEEN conditions
 - **CORS enabled** for API access
-- **Docker Compose** for easy local development
+- **Docker Compose** for easy local development (3 containers)
 - **No build step** - pure vanilla JavaScript
 
 ## Development
@@ -162,10 +165,11 @@ The frontend is pure HTML, CSS, and vanilla JavaScript with no build step requir
 - `#/about` - About page with application information
 - `#/faq` - Frequently Asked Questions
 - `/` or `#/items` - Items list with table view and icon actions
-- `#/items/{id}` - View item details with reservation calendar
+- `#/items/{id}` - View item details with "Check Availability" button (opens calendar modal)
 - `#/items/new` - Create new item form
 - `#/items/edit/{id}` - Edit item form with availability calendar and delete in Danger Zone
 - `#/reservations` - Reservations list with table view and icon actions
+- `#/reservations/new/{itemId}/{date}` - Create reservation form
 - `#/reservations/{itemId}/{date}` - View reservation details
 - `#/reservations/edit/{itemId}/{date}` - Edit reservation form with delete in Danger Zone
 
@@ -173,7 +177,11 @@ The frontend is pure HTML, CSS, and vanilla JavaScript with no build step requir
 ```
 Items List
   ├─ Click item name or view icon → View Item
-  │   ├─ Reservation Calendar (click available date to reserve)
+  │   ├─ Click "Check Availability" button → Modal calendar opens
+  │   │   ├─ Click "Reserve" link on available date → Create Reservation form
+  │   │   │   ├─ Fill form and submit → Return to item view
+  │   │   │   └─ Cancel → Return to item view
+  │   │   └─ Close modal (× or click outside) → Return to item view
   │   └─ Click Edit button → Edit Item
   │       ├─ Availability Calendar (toggle dates)
   │       ├─ Update Item → Save and return to list
@@ -198,6 +206,11 @@ The app uses hash-based routing for client-side navigation without page reloads.
 ### Database
 
 DynamoDB Local is configured with persistent storage in `./dynamodb-data/`. Data is preserved across container restarts.
+
+**Table Initialization:**
+- Tables are automatically created by the API on first startup
+- Idempotent initialization - safe to restart containers
+- No separate init container needed
 
 **Tables:**
 - **Items** - Partition key: `id` (String)

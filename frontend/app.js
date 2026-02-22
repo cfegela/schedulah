@@ -1206,20 +1206,6 @@ async function renderAvailabilityCalendar(itemId) {
             <div class="calendar-body">
                 <div id="availability-grid" class="calendar-grid"></div>
             </div>
-            <div class="calendar-legend">
-                <div class="legend-item">
-                    <div class="legend-color available"></div>
-                    <span>Available for Reservations</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color past"></div>
-                    <span>Not Available</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color today"></div>
-                    <span>Today</span>
-                </div>
-            </div>
         </div>
     `;
 

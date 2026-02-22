@@ -13,21 +13,6 @@ services:
     networks:
       - schedulah-network
 
-  dynamodb-init:
-    image: amazon/aws-cli:latest
-    container_name: schedulah-dynamodb-init
-    depends_on:
-      - dynamodb-local
-    environment:
-      - AWS_ACCESS_KEY_ID=dummy
-      - AWS_SECRET_ACCESS_KEY=dummy
-      - AWS_DEFAULT_REGION=us-east-1
-    volumes:
-      - ./scripts/init-dynamodb.sh:/init-dynamodb.sh
-    entrypoint: ["/bin/sh", "/init-dynamodb.sh"]
-    networks:
-      - schedulah-network
-
   api:
     build:
       context: ./api
@@ -42,7 +27,6 @@ services:
       - AWS_DEFAULT_REGION=us-east-1
     depends_on:
       - dynamodb-local
-      - dynamodb-init
     networks:
       - schedulah-network
 
