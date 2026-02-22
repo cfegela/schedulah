@@ -1399,6 +1399,12 @@ function closeCalendarModal() {
     if (modal) {
         modal.classList.remove('active');
     }
+
+    // Reset calendar to current month
+    const now = new Date();
+    calendarState.currentMonth = now.getMonth();
+    calendarState.currentYear = now.getFullYear();
+    calendarState.selectedDates = [];
 }
 
 // Close modal when clicking outside
