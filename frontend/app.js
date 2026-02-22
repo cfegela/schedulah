@@ -18,6 +18,7 @@ let availabilityCalendarState = {
     currentMonth: new Date().getMonth(),
     currentYear: new Date().getFullYear(),
     availableDates: [],
+    reservedDates: [],
     itemId: null
 };
 
@@ -1222,19 +1223,33 @@ async function loadAvailableDatesForMonth() {
     const endDateStr = formatDateForAPI(endDate);
 
     try {
-        const response = await fetch(
+        // Load available dates
+        const availResponse = await fetch(
             `${API_BASE_URL}/items/${itemId}/availability?startDate=${startDateStr}&endDate=${endDateStr}`
         );
 
-        if (response.ok) {
-            const dates = await response.json();
+        if (availResponse.ok) {
+            const dates = await availResponse.json();
             availabilityCalendarState.availableDates = dates.map(d => d.date);
         } else {
             availabilityCalendarState.availableDates = [];
         }
+
+        // Load reservations
+        const resResponse = await fetch(
+            `${API_BASE_URL}/items/${itemId}/reservations?startDate=${startDateStr}&endDate=${endDateStr}`
+        );
+
+        if (resResponse.ok) {
+            const reservations = await resResponse.json();
+            availabilityCalendarState.reservedDates = reservations.map(r => r.date);
+        } else {
+            availabilityCalendarState.reservedDates = [];
+        }
     } catch (error) {
         console.error('Failed to load available dates:', error);
         availabilityCalendarState.availableDates = [];
+        availabilityCalendarState.reservedDates = [];
     }
 
     renderAvailabilityGrid();
@@ -1246,7 +1261,7 @@ function renderAvailabilityGrid() {
 
     if (!gridContainer || !monthYearDisplay) return;
 
-    const { currentMonth, currentYear, availableDates } = availabilityCalendarState;
+    const { currentMonth, currentYear, availableDates, reservedDates } = availabilityCalendarState;
 
     // Update month/year display
     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
@@ -1278,8 +1293,9 @@ function renderAvailabilityGrid() {
         gridContainer.appendChild(emptyCell);
     }
 
-    // Create set of available dates for quick lookup
+    // Create sets for quick lookup
     const availableDatesSet = new Set(availableDates);
+    const reservedDatesSet = new Set(reservedDates);
 
     // Add day cells
     for (let day = 1; day <= daysInMonth; day++) {
@@ -1295,9 +1311,14 @@ function renderAvailabilityGrid() {
         const isPast = date < today;
         const isToday = date.getTime() === today.getTime();
         const isAvailable = availableDatesSet.has(dateStr);
+        const isReserved = reservedDatesSet.has(dateStr);
 
         if (isPast) {
             dayCell.classList.add('past');
+            dayCell.style.cursor = 'not-allowed';
+        } else if (isReserved) {
+            // Reserved dates: shaded red with no interaction
+            dayCell.classList.add('has-reservation');
             dayCell.style.cursor = 'not-allowed';
         } else {
             if (isAvailable) {

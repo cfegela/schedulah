@@ -663,6 +663,13 @@ tbody tr:hover {
     color: #9ca3af;
 }
 
+.calendar-day.has-reservation {
+    background-color: #fee2e2;
+    border-color: #fca5a5;
+    color: #991b1b;
+    cursor: not-allowed !important;
+}
+
 .calendar-day.today {
     border-color: var(--primary);
     font-weight: 700;
