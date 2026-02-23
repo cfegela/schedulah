@@ -214,7 +214,22 @@ async function renderItemForm(mode, itemId = null) {
             </form>
         </div>
 
-        ${isEdit ? '<div id="availability-calendar-container"></div>' : ''}
+        ${isEdit ? `
+        <div class="form-section" style="margin-top: 2rem;">
+            <h2>Availability</h2>
+            <div id="availability-summary" style="margin: 1.5rem 0;">
+                <div style="color: var(--text-secondary);">Loading availability...</div>
+            </div>
+            <button type="button" class="btn btn-primary" onclick="openAvailabilityCalendarModal('${itemId}')">Set Available Dates</button>
+        </div>
+
+        <!-- Availability Calendar Modal -->
+        <div id="availability-calendar-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div id="availability-calendar-container"></div>
+            </div>
+        </div>
+        ` : ''}
 
         ${isEdit ? `
         <div class="form-section" style="margin-top: 2rem;">
@@ -238,8 +253,7 @@ async function renderItemForm(mode, itemId = null) {
     // Load item data if editing
     if (isEdit && itemId) {
         await loadItemForEdit(itemId);
-        // Initialize availability calendar for editing
-        await renderAvailabilityCalendar(itemId);
+        await loadAvailabilitySummary(itemId);
     }
 
     // Attach form submit handler
@@ -1195,14 +1209,15 @@ async function renderAvailabilityCalendar(itemId) {
     availabilityCalendarState.itemId = itemId;
 
     container.innerHTML = `
-        <div class="calendar-card" style="margin-top: 2rem;">
-            <div class="calendar-header">
-                <h3>Set Available Dates</h3>
+        <div class="calendar-card">
+            <div class="calendar-header" style="padding: 1rem 2rem; border-bottom: 1px solid var(--border); background-color: var(--bg-gray); display: flex; justify-content: space-between; align-items: center;">
+                <div style="width: 2rem;"></div>
                 <div class="calendar-nav">
                     <button class="calendar-nav-btn" onclick="navigateAvailabilityCalendar(-1)">Previous</button>
                     <span class="calendar-month-year" id="availability-month-year"></span>
                     <button class="calendar-nav-btn" onclick="navigateAvailabilityCalendar(1)">Next</button>
                 </div>
+                <button class="modal-close" onclick="closeAvailabilityCalendarModal()" aria-label="Close">&times;</button>
             </div>
             <div class="calendar-body">
                 <div id="availability-grid" class="calendar-grid"></div>
@@ -1380,9 +1395,99 @@ async function toggleAvailability(dateStr) {
 
         renderAvailabilityGrid();
 
+        // Refresh the availability summary
+        await loadAvailabilitySummary(itemId);
+
     } catch (error) {
         alert('Error updating availability: ' + error.message);
     }
+}
+
+// Load and display availability summary
+async function loadAvailabilitySummary(itemId) {
+    const summaryContainer = document.getElementById('availability-summary');
+    if (!summaryContainer) return;
+
+    try {
+        // Get date range for the next year from today
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const oneYearFromNow = new Date(today);
+        oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+
+        const startDateStr = formatDateForAPI(today);
+        const endDateStr = formatDateForAPI(oneYearFromNow);
+
+        // Load available dates and reservations
+        const [availResponse, resResponse] = await Promise.all([
+            fetch(`${API_BASE_URL}/items/${itemId}/availability?startDate=${startDateStr}&endDate=${endDateStr}`),
+            fetch(`${API_BASE_URL}/items/${itemId}/reservations?startDate=${startDateStr}&endDate=${endDateStr}`)
+        ]);
+
+        let availableDates = [];
+        let reservations = [];
+
+        if (availResponse.ok) {
+            const dates = await availResponse.json();
+            availableDates = dates.map(d => d.date).sort();
+        }
+
+        if (resResponse.ok) {
+            reservations = await resResponse.json();
+            reservations.sort((a, b) => a.date.localeCompare(b.date));
+        }
+
+        // Build the summary HTML
+        let html = '';
+
+        if (availableDates.length > 0) {
+            html += '<div style="margin-bottom: 1rem;"><strong>Available Dates:</strong><ul style="margin: 0.5rem 0 0 1.5rem;">';
+            availableDates.forEach(date => {
+                html += `<li>${formatDateDisplay(date)}</li>`;
+            });
+            html += '</ul></div>';
+        } else {
+            html += '<div style="margin-bottom: 1rem; color: var(--text-secondary);">No available dates set</div>';
+        }
+
+        if (reservations.length > 0) {
+            html += '<div><strong>Reserved Dates:</strong><ul style="margin: 0.5rem 0 0 1.5rem;">';
+            reservations.forEach(res => {
+                html += `<li>${formatDateDisplay(res.date)} - ${escapeHtml(res.reservedBy)}</li>`;
+            });
+            html += '</ul></div>';
+        }
+
+        summaryContainer.innerHTML = html;
+
+    } catch (error) {
+        console.error('Failed to load availability summary:', error);
+        summaryContainer.innerHTML = '<div style="color: var(--text-secondary);">Failed to load availability information</div>';
+    }
+}
+
+// Open availability calendar modal
+async function openAvailabilityCalendarModal(itemId) {
+    const modal = document.getElementById('availability-calendar-modal');
+    if (!modal) return;
+
+    modal.classList.add('active');
+
+    // Render calendar inside modal
+    await renderAvailabilityCalendar(itemId);
+}
+
+// Close availability calendar modal
+function closeAvailabilityCalendarModal() {
+    const modal = document.getElementById('availability-calendar-modal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+
+    // Reset calendar to current month
+    const now = new Date();
+    availabilityCalendarState.currentMonth = now.getMonth();
+    availabilityCalendarState.currentYear = now.getFullYear();
 }
 
 // Calendar functions
@@ -1419,6 +1524,11 @@ document.addEventListener('click', (e) => {
     const modal = document.getElementById('calendar-modal');
     if (modal && e.target === modal) {
         closeCalendarModal();
+    }
+
+    const availabilityModal = document.getElementById('availability-calendar-modal');
+    if (availabilityModal && e.target === availabilityModal) {
+        closeAvailabilityCalendarModal();
     }
 });
 
