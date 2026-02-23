@@ -127,8 +127,9 @@ All API requests are proxied through Nginx at `/api/*`:
 - **View item details** - Dedicated page with "Check Availability" button
 - **Check availability modal** - Click button to open calendar in responsive modal popup
 - **Create new items** - Dedicated form page with validation
-- **Edit existing items** - Pre-populated form with inline availability calendar
-- **Set availability** - Interactive calendar to toggle available dates (green = available)
+- **Edit existing items** - Pre-populated form with availability summary and modal calendar
+- **Availability summary** - Shows lists of available and reserved dates for the next year
+- **Set availability** - Interactive calendar modal to toggle available dates (green = available)
 - **Delete items** - Available on edit page in Danger Zone with confirmation
 
 ### Reservation Management
@@ -167,7 +168,7 @@ The frontend is pure HTML, CSS, and vanilla JavaScript with no build step requir
 - `/` or `#/items` - Items list with table view and icon actions
 - `#/items/{id}` - View item details with "Check Availability" button (opens calendar modal)
 - `#/items/new` - Create new item form
-- `#/items/edit/{id}` - Edit item form with availability calendar and delete in Danger Zone
+- `#/items/edit/{id}` - Edit item form with availability summary, "Set Available Dates" button (opens modal calendar), and delete in Danger Zone
 - `#/reservations` - Reservations list with table view and icon actions
 - `#/reservations/new/{itemId}/{date}` - Create reservation form
 - `#/reservations/{itemId}/{date}` - View reservation details
@@ -183,11 +184,21 @@ Items List
   │   │   │   └─ Cancel → Return to item view
   │   │   └─ Close modal (× or click outside) → Return to item view
   │   └─ Click Edit button → Edit Item
-  │       ├─ Availability Calendar (toggle dates)
+  │       ├─ Availability Summary (shows available and reserved dates)
+  │       ├─ Click "Set Available Dates" button → Modal calendar opens
+  │       │   ├─ Toggle dates (green = available)
+  │       │   └─ Close modal (× or click outside) → Summary refreshes
   │       ├─ Update Item → Save and return to list
   │       ├─ Danger Zone: Delete Item → Confirm and return to list
   │       └─ Cancel → Return to list
-  ├─ Click edit icon → Edit Item (same as above)
+  ├─ Click edit icon → Edit Item
+  │   ├─ Availability Summary (shows available and reserved dates)
+  │   ├─ Click "Set Available Dates" button → Modal calendar opens
+  │   │   ├─ Toggle dates (green = available)
+  │   │   └─ Close modal (× or click outside) → Summary refreshes
+  │   ├─ Update Item → Save and return to list
+  │   ├─ Danger Zone: Delete Item → Confirm and return to list
+  │   └─ Cancel → Return to list
   └─ Click Create New Item → Create Form
       ├─ Create Item → Save and return to list
       └─ Cancel → Return to list
