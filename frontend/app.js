@@ -161,17 +161,7 @@ async function renderItemsList() {
         <div class="items-section">
             <div id="loading" class="loading">Loading items...</div>
             <div id="error" class="error" style="display: none;"></div>
-            <table id="items-table" style="display: none;">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Description</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="items-tbody">
-                </tbody>
-            </table>
+            <div id="items-grid" class="items-grid" style="display: none;"></div>
             <div id="empty-state" style="display: none;" class="empty-state">
                 <p>No items yet. Create one to get started!</p>
                 <a href="#/items/new" class="btn btn-primary" style="margin-top: 1rem;">Create Your First Item</a>
@@ -376,7 +366,7 @@ async function renderReservations() {
                         <th>Date</th>
                         <th>Item</th>
                         <th>Reserved By</th>
-                        <th>Actions</th>
+                        <th class="actions">Actions</th>
                     </tr>
                 </thead>
                 <tbody id="reservations-tbody">
@@ -1018,40 +1008,33 @@ async function loadItems() {
     }
 }
 
-// Display items in table
+// Display items in card grid
 function displayItems(items) {
-    const itemsTable = document.getElementById('items-table');
-    const itemsTbody = document.getElementById('items-tbody');
+    const itemsGrid = document.getElementById('items-grid');
     const emptyState = document.getElementById('empty-state');
 
-    if (!itemsTbody) return;
+    if (!itemsGrid) return;
 
-    itemsTbody.innerHTML = '';
+    itemsGrid.innerHTML = '';
 
     if (items.length === 0) {
-        itemsTable.style.display = 'none';
+        itemsGrid.style.display = 'none';
         emptyState.style.display = 'block';
         return;
     }
 
-    itemsTable.style.display = 'table';
+    itemsGrid.style.display = 'grid';
     emptyState.style.display = 'none';
 
     items.forEach(item => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td><a href="#/items/${item.id}" class="item-name-link"><strong>${escapeHtml(item.name)}</strong></a></td>
-            <td class="item-description">${escapeHtml(item.description || '')}</td>
-            <td class="actions">
-                <a href="#/items/${item.id}" class="btn btn-secondary action-btn" title="View details">
-                    <img src="https://cdn.jsdelivr.net/npm/remixicon@4.8.0/icons/System/eye-fill.svg" alt="View" style="width: 20px; height: 20px; display: block;">
-                </a>
-                <a href="#/items/edit/${item.id}" class="btn btn-secondary action-btn" title="Edit item">
-                    <img src="https://cdn.jsdelivr.net/npm/remixicon@4.8.0/icons/Design/pencil-ai-fill.svg" alt="Edit" style="width: 20px; height: 20px; display: block;">
-                </a>
-            </td>
+        const card = document.createElement('a');
+        card.href = `#/items/${item.id}`;
+        card.className = 'item-card';
+        card.innerHTML = `
+            <h3 class="item-card-name">${escapeHtml(item.name)}</h3>
+            ${item.description ? `<p class="item-card-description">${escapeHtml(item.description)}</p>` : ''}
         `;
-        itemsTbody.appendChild(row);
+        itemsGrid.appendChild(card);
     });
 }
 
