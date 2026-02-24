@@ -1,6 +1,6 @@
-# Schedulah - Item Reservation System
+# Schedulah - Rental Reservation System
 
-A full-stack item reservation system that allows you to manage items, set their availability, and make date-based reservations. Built with Python Lambda handlers, vanilla JavaScript, and DynamoDB, all running locally via Docker Compose.
+A full-stack rental reservation system that allows you to manage rentals, set their availability, and make date-based reservations. Built with Python Lambda handlers, vanilla JavaScript, and DynamoDB, all running locally via Docker Compose.
 
 ## Architecture
 
@@ -42,7 +42,7 @@ schedulah/
 
 2. **Access the application**:
    - Open your browser to http://localhost:8080
-   - The frontend will load and display the Items Manager interface
+   - The frontend will load and display the Rentals Manager interface
 
 3. **Stop the services**:
    ```bash
@@ -61,31 +61,31 @@ schedulah/
 
 All API requests are proxied through Nginx at `/api/*`:
 
-### Items
-- `GET /api/items` - List all items
-- `GET /api/items/{id}` - Get a specific item
-- `POST /api/items` - Create a new item
-- `PUT /api/items/{id}` - Update an item
-- `DELETE /api/items/{id}` - Delete an item
+### Rentals
+- `GET /api/rentals` - List all rentals
+- `GET /api/rentals/{id}` - Get a specific rental
+- `POST /api/rentals` - Create a new rental
+- `PUT /api/rentals/{id}` - Update a rental
+- `DELETE /api/rentals/{id}` - Delete a rental
 
 ### Reservations
-- `GET /api/items/{id}/reservations` - List reservations for an item (supports `?startDate=` and `?endDate=` query params)
-- `POST /api/items/{id}/reservations` - Create reservation(s) for an item
-- `DELETE /api/items/{id}/reservations/{date}` - Delete a specific reservation
+- `GET /api/rentals/{id}/reservations` - List reservations for a rental (supports `?startDate=` and `?endDate=` query params)
+- `POST /api/rentals/{id}/reservations` - Create reservation(s) for a rental
+- `DELETE /api/rentals/{id}/reservations/{date}` - Delete a specific reservation
 
 ### Availability
-- `GET /api/items/{id}/availability` - List available dates for an item (supports `?startDate=` and `?endDate=` query params)
-- `POST /api/items/{id}/availability` - Set dates as available
-- `DELETE /api/items/{id}/availability/{date}` - Remove date from availability
+- `GET /api/rentals/{id}/availability` - List available dates for a rental (supports `?startDate=` and `?endDate=` query params)
+- `POST /api/rentals/{id}/availability` - Set dates as available
+- `DELETE /api/rentals/{id}/availability/{date}` - Remove date from availability
 
 ### Data Schemas
 
-**Item:**
+**Rental:**
 ```json
 {
   "id": "uuid-string",
-  "name": "Item name (required)",
-  "description": "Item description (optional)",
+  "name": "Rental name (required)",
+  "description": "Rental description (optional)",
   "createdAt": "ISO-8601 timestamp"
 }
 ```
@@ -93,7 +93,7 @@ All API requests are proxied through Nginx at `/api/*`:
 **Reservation:**
 ```json
 {
-  "itemId": "uuid-string",
+  "rentalId": "uuid-string",
   "date": "YYYY-MM-DD",
   "reservedBy": "Name (required)",
   "notes": "Optional notes",
@@ -104,7 +104,7 @@ All API requests are proxied through Nginx at `/api/*`:
 **Available Date:**
 ```json
 {
-  "itemId": "uuid-string",
+  "rentalId": "uuid-string",
   "date": "YYYY-MM-DD",
   "createdAt": "ISO-8601 timestamp"
 }
@@ -114,7 +114,7 @@ All API requests are proxied through Nginx at `/api/*`:
 
 ### User Interface
 - **Professional header and navbar** with mobile-responsive hamburger menu
-- **Multi-page navigation** with hash-based routing (About, FAQ, Items, Reservations)
+- **Multi-page navigation** with hash-based routing (About, FAQ, Rentals, Reservations)
 - **Icon-based actions** using Remix Icons for clean, modern UI
 - **Responsive design** that works on desktop, tablet, and mobile
 - **Client-side routing** - no page reloads, instant navigation
@@ -122,21 +122,21 @@ All API requests are proxied through Nginx at `/api/*`:
 - **Modal calendar** - Availability calendar opens in responsive modal popup
 - **Custom calendar UI** - Built from scratch without external libraries
 
-### Item Management
-- **View items list** - Clean table with name, description, and icon actions
-- **View item details** - Dedicated page with "Check Availability" button
+### Rental Management
+- **View rentals list** - Clean table with name, description, and icon actions
+- **View rental details** - Dedicated page with "Check Availability" button
 - **Check availability modal** - Click button to open calendar in responsive modal popup
-- **Create new items** - Dedicated form page with validation
-- **Edit existing items** - Pre-populated form with availability summary and modal calendar
+- **Create new rentals** - Dedicated form page with validation
+- **Edit existing rentals** - Pre-populated form with availability summary and modal calendar
 - **Availability summary** - Shows lists of available and reserved dates for the next year
 - **Set availability** - Interactive calendar modal to toggle available dates (green = available)
-- **Delete items** - Available on edit page in Danger Zone with confirmation
+- **Delete rentals** - Available on edit page in Danger Zone with confirmation
 
 ### Reservation Management
 - **Create reservations** - Click "Reserve" link on available dates in calendar modal
-- **Dedicated reservation form** - Separate page with item name, date, and reservation details
+- **Dedicated reservation form** - Separate page with rental name, date, and reservation details
 - **Single-day reservations** - One date per reservation for simplicity
-- **View all reservations** - Table view showing date, item, reserved by, with view/edit icons
+- **View all reservations** - Table view showing date, rental, reserved by, with view/edit icons
 - **View reservation details** - Dedicated page showing reservation information
 - **Edit reservations** - Update reserved by name and notes
 - **Delete reservations** - Available on edit page in Danger Zone with confirmation
@@ -146,7 +146,7 @@ All API requests are proxied through Nginx at `/api/*`:
 - **RESTful API** with Python Lambda handlers (AWS-deployable)
 - **DynamoDB Local** with persistent storage across container restarts
 - **Automatic table initialization** - API creates tables on startup if they don't exist
-- **Three-table design** - Items, Reservations, AvailableDates with composite keys
+- **Three-table design** - Rentals, Reservations, AvailableDates with composite keys
 - **Date range queries** - Efficient DynamoDB queries with BETWEEN conditions
 - **CORS enabled** for API access
 - **Docker Compose** for easy local development (3 containers)
@@ -165,42 +165,42 @@ The frontend is pure HTML, CSS, and vanilla JavaScript with no build step requir
 **Pages:**
 - `#/about` - About page with application information
 - `#/faq` - Frequently Asked Questions
-- `/` or `#/items` - Items list with table view and icon actions
-- `#/items/{id}` - View item details with "Check Availability" button (opens calendar modal)
-- `#/items/new` - Create new item form
-- `#/items/edit/{id}` - Edit item form with availability summary, "Set Available Dates" button (opens modal calendar), and delete in Danger Zone
+- `/` or `#/rentals` - Rentals list with table view and icon actions
+- `#/rentals/{id}` - View rental details with "Check Availability" button (opens calendar modal)
+- `#/rentals/new` - Create new rental form
+- `#/rentals/edit/{id}` - Edit rental form with availability summary, "Set Available Dates" button (opens modal calendar), and delete in Danger Zone
 - `#/reservations` - Reservations list with table view and icon actions
-- `#/reservations/new/{itemId}/{date}` - Create reservation form
-- `#/reservations/{itemId}/{date}` - View reservation details
-- `#/reservations/edit/{itemId}/{date}` - Edit reservation form with delete in Danger Zone
+- `#/reservations/new/{rentalId}/{date}` - Create reservation form
+- `#/reservations/{rentalId}/{date}` - View reservation details
+- `#/reservations/edit/{rentalId}/{date}` - Edit reservation form with delete in Danger Zone
 
 **Navigation Flow:**
 ```
-Items List
-  ├─ Click item name or view icon → View Item
+Rentals List
+  ├─ Click rental name or view icon → View Rental
   │   ├─ Click "Check Availability" button → Modal calendar opens
   │   │   ├─ Click "Reserve" link on available date → Create Reservation form
-  │   │   │   ├─ Fill form and submit → Return to item view
-  │   │   │   └─ Cancel → Return to item view
-  │   │   └─ Close modal (× or click outside) → Return to item view
-  │   └─ Click Edit button → Edit Item
+  │   │   │   ├─ Fill form and submit → Return to rental view
+  │   │   │   └─ Cancel → Return to rental view
+  │   │   └─ Close modal (× or click outside) → Return to rental view
+  │   └─ Click Edit button → Edit Rental
   │       ├─ Availability Summary (shows available and reserved dates)
   │       ├─ Click "Set Available Dates" button → Modal calendar opens
   │       │   ├─ Toggle dates (green = available)
   │       │   └─ Close modal (× or click outside) → Summary refreshes
-  │       ├─ Update Item → Save and return to list
-  │       ├─ Danger Zone: Delete Item → Confirm and return to list
+  │       ├─ Update Rental → Save and return to list
+  │       ├─ Danger Zone: Delete Rental → Confirm and return to list
   │       └─ Cancel → Return to list
-  ├─ Click edit icon → Edit Item
+  ├─ Click edit icon → Edit Rental
   │   ├─ Availability Summary (shows available and reserved dates)
   │   ├─ Click "Set Available Dates" button → Modal calendar opens
   │   │   ├─ Toggle dates (green = available)
   │   │   └─ Close modal (× or click outside) → Summary refreshes
-  │   ├─ Update Item → Save and return to list
-  │   ├─ Danger Zone: Delete Item → Confirm and return to list
+  │   ├─ Update Rental → Save and return to list
+  │   ├─ Danger Zone: Delete Rental → Confirm and return to list
   │   └─ Cancel → Return to list
-  └─ Click Create New Item → Create Form
-      ├─ Create Item → Save and return to list
+  └─ Click Create New Rental → Create Form
+      ├─ Create Rental → Save and return to list
       └─ Cancel → Return to list
 
 Reservations List
@@ -224,9 +224,9 @@ DynamoDB Local is configured with persistent storage in `./dynamodb-data/`. Data
 - No separate init container needed
 
 **Tables:**
-- **Items** - Partition key: `id` (String)
-- **Reservations** - Composite key: `itemId` (partition), `date` (sort)
-- **AvailableDates** - Composite key: `itemId` (partition), `date` (sort)
+- **Rentals** - Partition key: `id` (String)
+- **Reservations** - Composite key: `rentalId` (partition), `date` (sort)
+- **AvailableDates** - Composite key: `rentalId` (partition), `date` (sort)
 
 The composite keys enable efficient range queries for reservations and availability within date ranges.
 
@@ -235,35 +235,35 @@ The composite keys enable efficient range queries for reservations and availabil
 Test the API directly:
 
 ```bash
-# Items
-curl http://localhost:8080/api/items
-curl -X POST http://localhost:8080/api/items \
+# Rentals
+curl http://localhost:8080/api/rentals
+curl -X POST http://localhost:8080/api/rentals \
   -H "Content-Type: application/json" \
   -d '{"name":"Conference Room A","description":"Main conference room"}'
 
-curl -X PUT http://localhost:8080/api/items/{id} \
+curl -X PUT http://localhost:8080/api/rentals/{id} \
   -H "Content-Type: application/json" \
   -d '{"name":"Updated Name","description":"Updated description"}'
 
-curl -X DELETE http://localhost:8080/api/items/{id}
+curl -X DELETE http://localhost:8080/api/rentals/{id}
 
 # Availability
-curl -X POST http://localhost:8080/api/items/{id}/availability \
+curl -X POST http://localhost:8080/api/rentals/{id}/availability \
   -H "Content-Type: application/json" \
   -d '{"dates":["2026-03-15","2026-03-16","2026-03-17"]}'
 
-curl "http://localhost:8080/api/items/{id}/availability?startDate=2026-03-01&endDate=2026-03-31"
+curl "http://localhost:8080/api/rentals/{id}/availability?startDate=2026-03-01&endDate=2026-03-31"
 
-curl -X DELETE http://localhost:8080/api/items/{id}/availability/2026-03-15
+curl -X DELETE http://localhost:8080/api/rentals/{id}/availability/2026-03-15
 
 # Reservations
-curl -X POST http://localhost:8080/api/items/{id}/reservations \
+curl -X POST http://localhost:8080/api/rentals/{id}/reservations \
   -H "Content-Type: application/json" \
   -d '{"dates":["2026-03-15"],"reservedBy":"John Doe","notes":"Team meeting"}'
 
-curl "http://localhost:8080/api/items/{id}/reservations?startDate=2026-03-01&endDate=2026-03-31"
+curl "http://localhost:8080/api/rentals/{id}/reservations?startDate=2026-03-01&endDate=2026-03-31"
 
-curl -X DELETE http://localhost:8080/api/items/{id}/reservations/2026-03-15
+curl -X DELETE http://localhost:8080/api/rentals/{id}/reservations/2026-03-15
 ```
 
 ## Deploying to AWS
@@ -274,9 +274,9 @@ The Lambda handler (`api/handler.py`) is ready to deploy to AWS:
 2. Create a Lambda function with Python 3.12 runtime
 3. Set up API Gateway with Lambda proxy integration
 4. Create DynamoDB tables:
-   - **Items**: Partition key `id` (String)
-   - **Reservations**: Partition key `itemId` (String), Sort key `date` (String)
-   - **AvailableDates**: Partition key `itemId` (String), Sort key `date` (String)
+   - **Rentals**: Partition key `id` (String)
+   - **Reservations**: Partition key `rentalId` (String), Sort key `date` (String)
+   - **AvailableDates**: Partition key `rentalId` (String), Sort key `date` (String)
 5. Configure the Lambda execution role with DynamoDB permissions
 
 ## License

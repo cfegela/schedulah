@@ -1,7 +1,7 @@
 const API_BASE_URL = '/api';
 
 // State
-let currentItem = null;
+let currentRental = null;
 
 // Calendar state (for reservation calendar)
 let calendarState = {
@@ -10,16 +10,16 @@ let calendarState = {
     selectedDates: [],
     reservations: [],
     availableDates: [],
-    itemId: null
+    rentalId: null
 };
 
-// Availability calendar state (for edit item page)
+// Availability calendar state (for edit rental page)
 let availabilityCalendarState = {
     currentMonth: new Date().getMonth(),
     currentYear: new Date().getFullYear(),
     availableDates: [],
     reservedDates: [],
-    itemId: null
+    rentalId: null
 };
 
 // Initialize
@@ -40,46 +40,46 @@ function initRouter() {
         updateActiveNavLink();
 
         // Route handling
-        if (hash === '#/' || hash === '#/items') {
-            renderItemsList();
-        } else if (hash === '#/items/new') {
-            renderItemForm('create');
-        } else if (hash.startsWith('#/items/edit/')) {
-            const itemId = hash.split('/').pop();
-            renderItemForm('edit', itemId);
-        } else if (hash.startsWith('#/items/')) {
-            const itemId = hash.split('/').pop();
-            if (itemId && itemId !== 'new') {
-                renderItemView(itemId);
+        if (hash === '#/' || hash === '#/rentals') {
+            renderRentalsList();
+        } else if (hash === '#/rentals/new') {
+            renderRentalForm('create');
+        } else if (hash.startsWith('#/rentals/edit/')) {
+            const rentalId = hash.split('/').pop();
+            renderRentalForm('edit', rentalId);
+        } else if (hash.startsWith('#/rentals/')) {
+            const rentalId = hash.split('/').pop();
+            if (rentalId && rentalId !== 'new') {
+                renderRentalView(rentalId);
             } else {
-                renderItemsList();
+                renderRentalsList();
             }
         } else if (hash === '#/reservations') {
             renderReservations();
         } else if (hash.startsWith('#/reservations/new/')) {
             const parts = hash.split('/');
-            const itemId = parts[3];
+            const rentalId = parts[3];
             const date = parts[4];
-            if (itemId && date) {
-                renderCreateReservation(itemId, date);
+            if (rentalId && date) {
+                renderCreateReservation(rentalId, date);
             } else {
                 renderReservations();
             }
         } else if (hash.startsWith('#/reservations/edit/')) {
             const parts = hash.split('/');
-            const itemId = parts[3];
+            const rentalId = parts[3];
             const date = parts[4];
-            if (itemId && date) {
-                renderEditReservation(itemId, date);
+            if (rentalId && date) {
+                renderEditReservation(rentalId, date);
             } else {
                 renderReservations();
             }
         } else if (hash.startsWith('#/reservations/')) {
             const parts = hash.split('/');
-            const itemId = parts[2];
+            const rentalId = parts[2];
             const date = parts[3];
-            if (itemId && date && parts[2] !== 'edit' && parts[2] !== 'new') {
-                renderViewReservation(itemId, date);
+            if (rentalId && date && parts[2] !== 'edit' && parts[2] !== 'new') {
+                renderViewReservation(rentalId, date);
             } else {
                 renderReservations();
             }
@@ -88,7 +88,7 @@ function initRouter() {
         } else if (hash === '#/faq') {
             renderFaq();
         } else {
-            renderItemsList();
+            renderRentalsList();
         }
     }
 
@@ -105,7 +105,7 @@ function updateActiveNavLink() {
 
     links.forEach(link => {
         const href = link.getAttribute('href');
-        const isActive = href === hash || (href === '#/' && hash === '#/items');
+        const isActive = href === hash || (href === '#/' && hash === '#/rentals');
 
         if (isActive) {
             link.classList.add('active');
@@ -148,56 +148,56 @@ function initNavbar() {
     });
 }
 
-// Render Items List View
-async function renderItemsList() {
+// Render Rentals List View
+async function renderRentalsList() {
     const viewContainer = document.getElementById('view-container');
 
     viewContainer.innerHTML = `
         <div class="page-header">
-            <h1 class="page-title">Items</h1>
-            <a href="#/items/new" class="btn btn-primary">Create New Item</a>
+            <h1 class="page-title">Rentals</h1>
+            <a href="#/rentals/new" class="btn btn-primary">Create New Rental</a>
         </div>
 
-        <div class="items-section">
-            <div id="loading" class="loading">Loading items...</div>
+        <div class="rentals-section">
+            <div id="loading" class="loading">Loading rentals...</div>
             <div id="error" class="error" style="display: none;"></div>
-            <div id="items-grid" class="items-grid" style="display: none;"></div>
+            <div id="rentals-grid" class="rentals-grid" style="display: none;"></div>
             <div id="empty-state" style="display: none;" class="empty-state">
-                <p>No items yet. Create one to get started!</p>
-                <a href="#/items/new" class="btn btn-primary" style="margin-top: 1rem;">Create Your First Item</a>
+                <p>No rentals yet. Create one to get started!</p>
+                <a href="#/rentals/new" class="btn btn-primary" style="margin-top: 1rem;">Create Your First Rental</a>
             </div>
         </div>
     `;
 
-    await loadItems();
+    await loadRentals();
 }
 
-// Render Item Form View (Create or Edit)
-async function renderItemForm(mode, itemId = null) {
+// Render Rental Form View (Create or Edit)
+async function renderRentalForm(mode, rentalId = null) {
     const viewContainer = document.getElementById('view-container');
     const isEdit = mode === 'edit';
 
     viewContainer.innerHTML = `
         <div class="page-header">
-            <h1 class="page-title">${isEdit ? 'Edit Item' : 'Create New Item'}</h1>
-            <a href="#/" class="btn btn-secondary">Back to Items</a>
+            <h1 class="page-title">${isEdit ? 'Edit Rental' : 'Create New Rental'}</h1>
+            <a href="#/" class="btn btn-secondary">Back to Rentals</a>
         </div>
 
         <div class="form-section">
             <div id="form-error" class="error" style="display: none;"></div>
-            <form id="item-form">
-                <input type="hidden" id="item-id" value="${itemId || ''}">
+            <form id="rental-form">
+                <input type="hidden" id="rental-id" value="${rentalId || ''}">
                 <div class="form-group">
-                    <label for="item-name">Name *</label>
-                    <input type="text" id="item-name" required>
+                    <label for="rental-name">Name *</label>
+                    <input type="text" id="rental-name" required>
                 </div>
                 <div class="form-group">
-                    <label for="item-description">Description</label>
-                    <textarea id="item-description" rows="4"></textarea>
+                    <label for="rental-description">Description</label>
+                    <textarea id="rental-description" rows="4"></textarea>
                 </div>
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary" id="submit-btn">
-                        ${isEdit ? 'Update Item' : 'Create Item'}
+                        ${isEdit ? 'Update Rental' : 'Create Rental'}
                     </button>
                     <a href="#/" class="btn btn-secondary">Cancel</a>
                 </div>
@@ -210,7 +210,7 @@ async function renderItemForm(mode, itemId = null) {
             <div id="availability-summary" style="margin: 1.5rem 0;">
                 <div style="color: var(--text-secondary);">Loading availability...</div>
             </div>
-            <button type="button" class="btn btn-primary" onclick="openAvailabilityCalendarModal('${itemId}')">Set Available Dates</button>
+            <button type="button" class="btn btn-primary" onclick="openAvailabilityCalendarModal('${rentalId}')">Set Available Dates</button>
         </div>
 
         <!-- Availability Calendar Modal -->
@@ -228,33 +228,33 @@ async function renderItemForm(mode, itemId = null) {
                 These actions are irreversible and will permanently delete data from the system.
             </p>
             <div>
-                <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-primary);">Delete Item</h3>
+                <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-primary);">Delete Rental</h3>
                 <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.875rem;">
-                    Permanently delete this item and all associated reservations. This action cannot be undone.
+                    Permanently delete this rental and all associated reservations. This action cannot be undone.
                 </p>
-                <button type="button" class="btn btn-delete" id="delete-item-btn">
-                    Delete Item
+                <button type="button" class="btn btn-delete" id="delete-rental-btn">
+                    Delete Rental
                 </button>
             </div>
         </div>
         ` : ''}
     `;
 
-    // Load item data if editing
-    if (isEdit && itemId) {
-        await loadItemForEdit(itemId);
-        await loadAvailabilitySummary(itemId);
+    // Load rental data if editing
+    if (isEdit && rentalId) {
+        await loadRentalForEdit(rentalId);
+        await loadAvailabilitySummary(rentalId);
     }
 
     // Attach form submit handler
-    const form = document.getElementById('item-form');
+    const form = document.getElementById('rental-form');
     form.addEventListener('submit', handleFormSubmit);
 
     // Attach delete button handler if editing
-    if (isEdit && itemId) {
-        const deleteBtn = document.getElementById('delete-item-btn');
+    if (isEdit && rentalId) {
+        const deleteBtn = document.getElementById('delete-rental-btn');
         if (deleteBtn) {
-            deleteBtn.addEventListener('click', () => deleteItemFromEdit(itemId));
+            deleteBtn.addEventListener('click', () => deleteRentalFromEdit(rentalId));
         }
     }
 }
@@ -266,12 +266,12 @@ function renderAbout() {
     viewContainer.innerHTML = `
         <div class="page-header">
             <h1 class="page-title">About Schedulah</h1>
-            <a href="#/" class="btn btn-secondary">Back to Items</a>
+            <a href="#/" class="btn btn-secondary">Back to Rentals</a>
         </div>
 
         <div class="form-section">
             <h2>About This Application</h2>
-            <p>Schedulah is a simple items CRUD application built as a demonstration of modern web development practices.</p>
+            <p>Schedulah is a simple rentals CRUD application built as a demonstration of modern web development practices.</p>
 
             <h3 style="margin-top: 2rem;">Technology Stack</h3>
             <ul style="margin-left: 2rem; margin-top: 1rem;">
@@ -283,7 +283,7 @@ function renderAbout() {
 
             <h3 style="margin-top: 2rem;">Features</h3>
             <ul style="margin-left: 2rem; margin-top: 1rem;">
-                <li>Create, read, update, and delete items</li>
+                <li>Create, read, update, and delete rentals</li>
                 <li>Responsive design for mobile and desktop</li>
                 <li>Clean, modern user interface</li>
                 <li>RESTful API architecture</li>
@@ -304,31 +304,31 @@ function renderFaq() {
     viewContainer.innerHTML = `
         <div class="page-header">
             <h1 class="page-title">Frequently Asked Questions</h1>
-            <a href="#/" class="btn btn-secondary">Back to Items</a>
+            <a href="#/" class="btn btn-secondary">Back to Rentals</a>
         </div>
 
         <div class="form-section">
             <h2>General Questions</h2>
 
             <h3 style="margin-top: 2rem;">What is Schedulah?</h3>
-            <p>Schedulah is an item reservation system that allows you to manage items and their availability. You can create items, set which dates they're available, and make reservations for specific dates.</p>
+            <p>Schedulah is a rental reservation system that allows you to manage rentals and their availability. You can create rentals, set which dates they're available, and make reservations for specific dates.</p>
 
-            <h3 style="margin-top: 2rem;">How do I create an item?</h3>
-            <p>Click on "Items" in the navigation menu, then click the "Create New Item" button. Fill in the item name and description, then click "Create Item".</p>
+            <h3 style="margin-top: 2rem;">How do I create a rental?</h3>
+            <p>Click on "Rentals" in the navigation menu, then click the "Create New Rental" button. Fill in the rental name and description, then click "Create Rental".</p>
 
-            <h3 style="margin-top: 2rem;">How do I set availability for an item?</h3>
-            <p>After creating an item, click "Edit" from the item list or item details page. Scroll to the availability calendar and click on dates to toggle their availability. Green dates are available for reservations.</p>
+            <h3 style="margin-top: 2rem;">How do I set availability for a rental?</h3>
+            <p>After creating a rental, click "Edit" from the rental list or rental details page. Scroll to the availability calendar and click on dates to toggle their availability. Green dates are available for reservations.</p>
 
             <h2 style="margin-top: 2.5rem;">Reservations</h2>
 
             <h3 style="margin-top: 2rem;">How do I make a reservation?</h3>
-            <p>View an item's details page and use the reservation calendar. Click on an available date (shown in green), enter who the reservation is for and any notes, then submit the form.</p>
+            <p>View a rental's details page and use the reservation calendar. Click on an available date (shown in green), enter who the reservation is for and any notes, then submit the form.</p>
 
             <h3 style="margin-top: 2rem;">Can I reserve multiple days at once?</h3>
             <p>No, each reservation is for a single day. You'll need to create separate reservations for each date.</p>
 
             <h3 style="margin-top: 2rem;">How do I view all reservations?</h3>
-            <p>Click "Reservations" in the navigation menu to see a list of all reservations across all items.</p>
+            <p>Click "Reservations" in the navigation menu to see a list of all reservations across all rentals.</p>
 
             <h3 style="margin-top: 2rem;">How do I edit or cancel a reservation?</h3>
             <p>From the reservations list, click the eye icon to view the reservation, then click "Edit". You can update the details or scroll to the Danger Zone to delete the reservation.</p>
@@ -357,14 +357,14 @@ async function renderReservations() {
             <h1 class="page-title">Reservations</h1>
         </div>
 
-        <div class="items-section">
+        <div class="rentals-section">
             <div id="loading" class="loading">Loading reservations...</div>
             <div id="error" class="error" style="display: none;"></div>
             <table id="reservations-table" style="display: none;">
                 <thead>
                     <tr>
                         <th>Date</th>
-                        <th>Item</th>
+                        <th>Rental</th>
                         <th>Reserved By</th>
                         <th class="actions">Actions</th>
                     </tr>
@@ -381,7 +381,7 @@ async function renderReservations() {
     await loadAllReservations();
 }
 
-// Load all reservations from all items
+// Load all reservations from all rentals
 async function loadAllReservations() {
     const loadingDiv = document.getElementById('loading');
     const errorDiv = document.getElementById('error');
@@ -392,29 +392,29 @@ async function loadAllReservations() {
         if (loadingDiv) loadingDiv.style.display = 'block';
         if (errorDiv) errorDiv.style.display = 'none';
 
-        // First, get all items
-        const itemsResponse = await fetch(`${API_BASE_URL}/items`);
-        if (!itemsResponse.ok) {
-            throw new Error('Failed to load items');
+        // First, get all rentals
+        const rentalsResponse = await fetch(`${API_BASE_URL}/rentals`);
+        if (!rentalsResponse.ok) {
+            throw new Error('Failed to load rentals');
         }
-        const items = await itemsResponse.json();
+        const rentals = await rentalsResponse.json();
 
-        // Create a map of itemId -> itemName for lookup
-        const itemsMap = {};
-        items.forEach(item => {
-            itemsMap[item.id] = item.name;
+        // Create a map of rentalId -> rentalName for lookup
+        const rentalsMap = {};
+        rentals.forEach(rental => {
+            rentalsMap[rental.id] = rental.name;
         });
 
-        // Then, get all reservations for each item
+        // Then, get all reservations for each rental
         const allReservations = [];
-        for (const item of items) {
-            const resResponse = await fetch(`${API_BASE_URL}/items/${item.id}/reservations`);
+        for (const rental of rentals) {
+            const resResponse = await fetch(`${API_BASE_URL}/rentals/${rental.id}/reservations`);
             if (resResponse.ok) {
                 const reservations = await resResponse.json();
                 reservations.forEach(res => {
                     allReservations.push({
                         ...res,
-                        itemName: item.name
+                        rentalName: rental.name
                     });
                 });
             }
@@ -455,16 +455,16 @@ function displayReservations(reservations) {
         row.innerHTML = `
             <td><strong>${formatDateDisplay(reservation.date)}</strong></td>
             <td>
-                <a href="#/items/${reservation.itemId}" class="item-name-link">
-                    ${escapeHtml(reservation.itemName)}
+                <a href="#/rentals/${reservation.rentalId}" class="rental-name-link">
+                    ${escapeHtml(reservation.rentalName)}
                 </a>
             </td>
             <td>${escapeHtml(reservation.reservedBy)}</td>
             <td class="actions">
-                <a href="#/reservations/${reservation.itemId}/${reservation.date}" class="btn btn-secondary action-btn" title="View details">
+                <a href="#/reservations/${reservation.rentalId}/${reservation.date}" class="btn btn-secondary action-btn" title="View details">
                     <img src="https://cdn.jsdelivr.net/npm/remixicon@4.8.0/icons/System/eye-fill.svg" alt="View" style="width: 20px; height: 20px; display: block;">
                 </a>
-                <a href="#/reservations/edit/${reservation.itemId}/${reservation.date}" class="btn btn-secondary action-btn" title="Edit reservation">
+                <a href="#/reservations/edit/${reservation.rentalId}/${reservation.date}" class="btn btn-secondary action-btn" title="Edit reservation">
                     <img src="https://cdn.jsdelivr.net/npm/remixicon@4.8.0/icons/Design/pencil-ai-fill.svg" alt="Edit" style="width: 20px; height: 20px; display: block;">
                 </a>
             </td>
@@ -474,13 +474,13 @@ function displayReservations(reservations) {
 }
 
 // Render Create Reservation Page
-async function renderCreateReservation(itemId, date) {
+async function renderCreateReservation(rentalId, date) {
     const viewContainer = document.getElementById('view-container');
 
     viewContainer.innerHTML = `
         <div class="page-header">
             <h1 class="page-title">Create Reservation</h1>
-            <a href="#/items/${itemId}" class="btn btn-secondary">← Back to Item</a>
+            <a href="#/rentals/${rentalId}" class="btn btn-secondary">← Back to Rental</a>
         </div>
 
         <div id="loading" class="loading">Loading...</div>
@@ -490,8 +490,8 @@ async function renderCreateReservation(itemId, date) {
             <div class="form-section">
                 <form id="create-reservation-form">
                     <div class="form-group">
-                        <label>Item</label>
-                        <div id="item-name-display" style="padding: 10px 0; font-weight: 500;"></div>
+                        <label>Rental</label>
+                        <div id="rental-name-display" style="padding: 10px 0; font-weight: 500;"></div>
                     </div>
                     <div class="form-group">
                         <label>Date</label>
@@ -507,18 +507,18 @@ async function renderCreateReservation(itemId, date) {
                     </div>
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary">Create Reservation</button>
-                        <a href="#/items/${itemId}" class="btn btn-secondary">Cancel</a>
+                        <a href="#/rentals/${rentalId}" class="btn btn-secondary">Cancel</a>
                     </div>
                 </form>
             </div>
         </div>
     `;
 
-    await loadItemForReservation(itemId, date);
+    await loadRentalForReservation(rentalId, date);
 }
 
-// Load item details for creating reservation
-async function loadItemForReservation(itemId, date) {
+// Load rental details for creating reservation
+async function loadRentalForReservation(rentalId, date) {
     const loadingDiv = document.getElementById('loading');
     const errorDiv = document.getElementById('error');
     const formContainer = document.getElementById('reservation-form-container');
@@ -527,24 +527,24 @@ async function loadItemForReservation(itemId, date) {
         if (loadingDiv) loadingDiv.style.display = 'block';
         if (errorDiv) errorDiv.style.display = 'none';
 
-        // Fetch item to get the name
-        const itemResponse = await fetch(`${API_BASE_URL}/items/${itemId}`);
-        if (!itemResponse.ok) {
-            throw new Error('Item not found');
+        // Fetch rental to get the name
+        const rentalResponse = await fetch(`${API_BASE_URL}/rentals/${rentalId}`);
+        if (!rentalResponse.ok) {
+            throw new Error('Rental not found');
         }
-        const item = await itemResponse.json();
+        const rental = await rentalResponse.json();
 
-        // Display item name
-        const itemNameDiv = document.getElementById('item-name-display');
-        if (itemNameDiv) {
-            itemNameDiv.textContent = item.name;
+        // Display rental name
+        const rentalNameDiv = document.getElementById('rental-name-display');
+        if (rentalNameDiv) {
+            rentalNameDiv.textContent = rental.name;
         }
 
         // Set up form submission
         const form = document.getElementById('create-reservation-form');
         form.onsubmit = async (e) => {
             e.preventDefault();
-            await createReservation(itemId, date);
+            await createReservation(rentalId, date);
         };
 
         if (loadingDiv) loadingDiv.style.display = 'none';
@@ -560,7 +560,7 @@ async function loadItemForReservation(itemId, date) {
 }
 
 // Create a new reservation
-async function createReservation(itemId, date) {
+async function createReservation(rentalId, date) {
     const reservedBy = document.getElementById('reserved-by').value.trim();
     const notes = document.getElementById('reservation-notes').value.trim();
 
@@ -570,7 +570,7 @@ async function createReservation(itemId, date) {
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}/items/${itemId}/reservations`, {
+        const response = await fetch(`${API_BASE_URL}/rentals/${rentalId}/reservations`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -587,8 +587,8 @@ async function createReservation(itemId, date) {
             throw new Error(error || 'Failed to create reservation');
         }
 
-        // Redirect back to item view
-        window.location.hash = `#/items/${itemId}`;
+        // Redirect back to rental view
+        window.location.hash = `#/rentals/${rentalId}`;
 
     } catch (error) {
         alert('Error creating reservation: ' + error.message);
@@ -596,7 +596,7 @@ async function createReservation(itemId, date) {
 }
 
 // Render View Reservation Page
-async function renderViewReservation(itemId, date) {
+async function renderViewReservation(rentalId, date) {
     const viewContainer = document.getElementById('view-container');
 
     viewContainer.innerHTML = `
@@ -609,37 +609,37 @@ async function renderViewReservation(itemId, date) {
         <div id="error" class="error" style="display: none;"></div>
 
         <div id="reservation-details" style="display: none;">
-            <div class="item-view-card">
-                <div class="item-view-header">
+            <div class="rental-view-card">
+                <div class="rental-view-header">
                     <h2 id="view-reservation-date"></h2>
-                    <div class="item-view-actions">
-                        <a href="#/reservations/edit/${itemId}/${date}" class="btn btn-primary">Edit</a>
+                    <div class="rental-view-actions">
+                        <a href="#/reservations/edit/${rentalId}/${date}" class="btn btn-primary">Edit</a>
                     </div>
                 </div>
 
-                <div class="item-view-body">
-                    <div class="item-view-field">
-                        <label class="item-view-label">Item</label>
-                        <div id="view-reservation-item" class="item-view-value"></div>
+                <div class="rental-view-body">
+                    <div class="rental-view-field">
+                        <label class="rental-view-label">Rental</label>
+                        <div id="view-reservation-rental" class="rental-view-value"></div>
                     </div>
-                    <div class="item-view-field">
-                        <label class="item-view-label">Reserved By</label>
-                        <div id="view-reservation-reserved-by" class="item-view-value"></div>
+                    <div class="rental-view-field">
+                        <label class="rental-view-label">Reserved By</label>
+                        <div id="view-reservation-reserved-by" class="rental-view-value"></div>
                     </div>
-                    <div class="item-view-field">
-                        <label class="item-view-label">Notes</label>
-                        <div id="view-reservation-notes" class="item-view-value"></div>
+                    <div class="rental-view-field">
+                        <label class="rental-view-label">Notes</label>
+                        <div id="view-reservation-notes" class="rental-view-value"></div>
                     </div>
                 </div>
             </div>
         </div>
     `;
 
-    await loadReservationDetails(itemId, date);
+    await loadReservationDetails(rentalId, date);
 }
 
 // Load reservation details for view page
-async function loadReservationDetails(itemId, date) {
+async function loadReservationDetails(rentalId, date) {
     const loadingDiv = document.getElementById('loading');
     const errorDiv = document.getElementById('error');
     const detailsDiv = document.getElementById('reservation-details');
@@ -650,7 +650,7 @@ async function loadReservationDetails(itemId, date) {
         if (detailsDiv) detailsDiv.style.display = 'none';
 
         // Fetch reservation
-        const resResponse = await fetch(`${API_BASE_URL}/items/${itemId}/reservations?startDate=${date}&endDate=${date}`);
+        const resResponse = await fetch(`${API_BASE_URL}/rentals/${rentalId}/reservations?startDate=${date}&endDate=${date}`);
 
         if (!resResponse.ok) {
             throw new Error('Reservation not found');
@@ -663,20 +663,20 @@ async function loadReservationDetails(itemId, date) {
 
         const reservation = reservations[0];
 
-        // Fetch item to get the name
-        const itemResponse = await fetch(`${API_BASE_URL}/items/${itemId}`);
-        let itemName = 'Unknown Item';
-        if (itemResponse.ok) {
-            const item = await itemResponse.json();
-            itemName = item.name;
+        // Fetch rental to get the name
+        const rentalResponse = await fetch(`${API_BASE_URL}/rentals/${rentalId}`);
+        let rentalName = 'Unknown Rental';
+        if (rentalResponse.ok) {
+            const rental = await rentalResponse.json();
+            rentalName = rental.name;
         }
 
         // Display reservation details
         document.getElementById('view-reservation-date').textContent = formatDateDisplay(date);
 
-        const itemDiv = document.getElementById('view-reservation-item');
-        if (itemDiv) {
-            itemDiv.innerHTML = `<a href="#/items/${itemId}" class="item-name-link">${escapeHtml(itemName)}</a>`;
+        const rentalDiv = document.getElementById('view-reservation-rental');
+        if (rentalDiv) {
+            rentalDiv.innerHTML = `<a href="#/rentals/${rentalId}" class="rental-name-link">${escapeHtml(rentalName)}</a>`;
         }
 
         const reservedByDiv = document.getElementById('view-reservation-reserved-by');
@@ -702,7 +702,7 @@ async function loadReservationDetails(itemId, date) {
 }
 
 // Render Edit Reservation Page
-async function renderEditReservation(itemId, date) {
+async function renderEditReservation(rentalId, date) {
     const viewContainer = document.getElementById('view-container');
 
     viewContainer.innerHTML = `
@@ -754,11 +754,11 @@ async function renderEditReservation(itemId, date) {
         </div>
     `;
 
-    await loadReservationForEdit(itemId, date);
+    await loadReservationForEdit(rentalId, date);
 }
 
 // Load reservation data for editing
-async function loadReservationForEdit(itemId, date) {
+async function loadReservationForEdit(rentalId, date) {
     const loadingDiv = document.getElementById('loading');
     const errorDiv = document.getElementById('error');
     const formContainer = document.getElementById('reservation-form-container');
@@ -767,7 +767,7 @@ async function loadReservationForEdit(itemId, date) {
         if (loadingDiv) loadingDiv.style.display = 'block';
         if (errorDiv) errorDiv.style.display = 'none';
 
-        const response = await fetch(`${API_BASE_URL}/items/${itemId}/reservations?startDate=${date}&endDate=${date}`);
+        const response = await fetch(`${API_BASE_URL}/rentals/${rentalId}/reservations?startDate=${date}&endDate=${date}`);
 
         if (!response.ok) {
             throw new Error('Failed to load reservation');
@@ -788,14 +788,14 @@ async function loadReservationForEdit(itemId, date) {
         const form = document.getElementById('edit-reservation-form');
         form.onsubmit = async (e) => {
             e.preventDefault();
-            await saveReservationEdit(itemId, date);
+            await saveReservationEdit(rentalId, date);
         };
 
         // Set up delete button
         const deleteBtn = document.getElementById('delete-reservation-btn');
         if (deleteBtn) {
             deleteBtn.onclick = async () => {
-                await deleteReservationFromEditPage(itemId, date);
+                await deleteReservationFromEditPage(rentalId, date);
             };
         }
 
@@ -812,7 +812,7 @@ async function loadReservationForEdit(itemId, date) {
 }
 
 // Save reservation edit
-async function saveReservationEdit(itemId, date) {
+async function saveReservationEdit(rentalId, date) {
     const reservedBy = document.getElementById('edit-reserved-by').value.trim();
     const notes = document.getElementById('edit-notes').value.trim();
 
@@ -823,12 +823,12 @@ async function saveReservationEdit(itemId, date) {
 
     try {
         // Delete old reservation
-        await fetch(`${API_BASE_URL}/items/${itemId}/reservations/${date}`, {
+        await fetch(`${API_BASE_URL}/rentals/${rentalId}/reservations/${date}`, {
             method: 'DELETE'
         });
 
         // Create new reservation with updated data
-        const response = await fetch(`${API_BASE_URL}/items/${itemId}/reservations`, {
+        const response = await fetch(`${API_BASE_URL}/rentals/${rentalId}/reservations`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -853,13 +853,13 @@ async function saveReservationEdit(itemId, date) {
 }
 
 // Delete reservation from edit page
-async function deleteReservationFromEditPage(itemId, date) {
+async function deleteReservationFromEditPage(rentalId, date) {
     if (!confirm(`Are you sure you want to delete this reservation for ${formatDateDisplay(date)}?\n\nThis action cannot be undone.`)) {
         return;
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}/items/${itemId}/reservations/${date}`, {
+        const response = await fetch(`${API_BASE_URL}/rentals/${rentalId}/reservations/${date}`, {
             method: 'DELETE'
         });
 
@@ -875,33 +875,33 @@ async function deleteReservationFromEditPage(itemId, date) {
     }
 }
 
-// Render Item View Page
-async function renderItemView(itemId) {
+// Render Rental View Page
+async function renderRentalView(rentalId) {
     const viewContainer = document.getElementById('view-container');
 
     viewContainer.innerHTML = `
         <div class="page-header">
-            <h1 class="page-title">Item Details</h1>
-            <a href="#/" class="btn btn-secondary">Back to Items</a>
+            <h1 class="page-title">Rental Details</h1>
+            <a href="#/" class="btn btn-secondary">Back to Rentals</a>
         </div>
 
-        <div id="loading" class="loading">Loading item details...</div>
+        <div id="loading" class="loading">Loading rental details...</div>
         <div id="view-error" class="error" style="display: none;"></div>
 
-        <div id="item-details" style="display: none;">
-            <div class="item-view-card">
-                <div class="item-view-header">
-                    <h2 id="view-item-name"></h2>
-                    <div class="item-view-actions">
-                        <button onclick="openCalendarModal('${itemId}')" class="btn btn-primary">Check Availability</button>
-                        <a href="#/items/edit/${itemId}" class="btn btn-secondary">Edit</a>
+        <div id="rental-details" style="display: none;">
+            <div class="rental-view-card">
+                <div class="rental-view-header">
+                    <h2 id="view-rental-name"></h2>
+                    <div class="rental-view-actions">
+                        <button onclick="openCalendarModal('${rentalId}')" class="btn btn-primary">Check Availability</button>
+                        <a href="#/rentals/edit/${rentalId}" class="btn btn-secondary">Edit</a>
                     </div>
                 </div>
 
-                <div class="item-view-body">
-                    <div class="item-view-field">
-                        <label class="item-view-label">Description</label>
-                        <div id="view-item-description" class="item-view-value"></div>
+                <div class="rental-view-body">
+                    <div class="rental-view-field">
+                        <label class="rental-view-label">Description</label>
+                        <div id="view-rental-description" class="rental-view-value"></div>
                     </div>
                 </div>
             </div>
@@ -915,37 +915,37 @@ async function renderItemView(itemId) {
         </div>
     `;
 
-    await loadItemDetails(itemId);
+    await loadRentalDetails(rentalId);
 }
 
-// Load item details for view page
-async function loadItemDetails(itemId) {
+// Load rental details for view page
+async function loadRentalDetails(rentalId) {
     const loadingDiv = document.getElementById('loading');
     const errorDiv = document.getElementById('view-error');
-    const detailsDiv = document.getElementById('item-details');
+    const detailsDiv = document.getElementById('rental-details');
 
     try {
         if (loadingDiv) loadingDiv.style.display = 'block';
         if (errorDiv) errorDiv.style.display = 'none';
         if (detailsDiv) detailsDiv.style.display = 'none';
 
-        const response = await fetch(`${API_BASE_URL}/items/${itemId}`);
+        const response = await fetch(`${API_BASE_URL}/rentals/${rentalId}`);
 
         if (!response.ok) {
-            throw new Error('Item not found');
+            throw new Error('Rental not found');
         }
 
-        const item = await response.json();
+        const rental = await response.json();
 
         // Populate the view
-        document.getElementById('view-item-name').textContent = item.name;
-        document.getElementById('view-item-description').textContent = item.description || 'No description provided';
+        document.getElementById('view-rental-name').textContent = rental.name;
+        document.getElementById('view-rental-description').textContent = rental.description || 'No description provided';
 
         if (loadingDiv) loadingDiv.style.display = 'none';
         if (detailsDiv) detailsDiv.style.display = 'block';
 
-        // Store item ID for calendar modal
-        calendarState.itemId = itemId;
+        // Store rental ID for calendar modal
+        calendarState.rentalId = rentalId;
 
     } catch (error) {
         if (loadingDiv) loadingDiv.style.display = 'none';
@@ -956,22 +956,22 @@ async function loadItemDetails(itemId) {
     }
 }
 
-// Delete item from edit page
-async function deleteItemFromEdit(id) {
-    if (!confirm('Are you sure you want to delete this item? This action cannot be undone.')) {
+// Delete rental from edit page
+async function deleteRentalFromEdit(id) {
+    if (!confirm('Are you sure you want to delete this rental? This action cannot be undone.')) {
         return;
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}/items/${id}`, {
+        const response = await fetch(`${API_BASE_URL}/rentals/${id}`, {
             method: 'DELETE'
         });
 
         if (!response.ok) {
-            throw new Error('Failed to delete item');
+            throw new Error('Failed to delete rental');
         }
 
-        // Navigate back to items list
+        // Navigate back to rentals list
         window.location.hash = '#/';
     } catch (error) {
         const errorDiv = document.getElementById('form-error');
@@ -982,25 +982,25 @@ async function deleteItemFromEdit(id) {
     }
 }
 
-// Load all items
-async function loadItems() {
+// Load all rentals
+async function loadRentals() {
     const loadingDiv = document.getElementById('loading');
     const errorDiv = document.getElementById('error');
-    const itemsTable = document.getElementById('items-table');
+    const itemsTable = document.getElementById('rentals-table');
     const emptyState = document.getElementById('empty-state');
 
     if (!loadingDiv) return;
 
     try {
         showLoading();
-        const response = await fetch(`${API_BASE_URL}/items`);
+        const response = await fetch(`${API_BASE_URL}/rentals`);
 
         if (!response.ok) {
-            throw new Error('Failed to load items');
+            throw new Error('Failed to load rentals');
         }
 
-        const items = await response.json();
-        displayItems(items);
+        const rentals = await response.json();
+        displayRentals(rentals);
     } catch (error) {
         showError(error.message);
     } finally {
@@ -1008,49 +1008,49 @@ async function loadItems() {
     }
 }
 
-// Display items in card grid
-function displayItems(items) {
-    const itemsGrid = document.getElementById('items-grid');
+// Display rentals in card grid
+function displayRentals(rentals) {
+    const rentalsGrid = document.getElementById('rentals-grid');
     const emptyState = document.getElementById('empty-state');
 
-    if (!itemsGrid) return;
+    if (!rentalsGrid) return;
 
-    itemsGrid.innerHTML = '';
+    rentalsGrid.innerHTML = '';
 
-    if (items.length === 0) {
-        itemsGrid.style.display = 'none';
+    if (rentals.length === 0) {
+        rentalsGrid.style.display = 'none';
         emptyState.style.display = 'block';
         return;
     }
 
-    itemsGrid.style.display = 'grid';
+    rentalsGrid.style.display = 'grid';
     emptyState.style.display = 'none';
 
-    items.forEach(item => {
+    rentals.forEach(rental => {
         const card = document.createElement('a');
-        card.href = `#/items/${item.id}`;
-        card.className = 'item-card';
+        card.href = `#/rentals/${rental.id}`;
+        card.className = 'rental-card';
         card.innerHTML = `
-            <h3 class="item-card-name">${escapeHtml(item.name)}</h3>
-            ${item.description ? `<p class="item-card-description">${escapeHtml(item.description)}</p>` : ''}
+            <h3 class="rental-card-name">${escapeHtml(rental.name)}</h3>
+            ${rental.description ? `<p class="rental-card-description">${escapeHtml(rental.description)}</p>` : ''}
         `;
-        itemsGrid.appendChild(card);
+        rentalsGrid.appendChild(card);
     });
 }
 
-// Load item data for editing
-async function loadItemForEdit(itemId) {
+// Load rental data for editing
+async function loadRentalForEdit(rentalId) {
     try {
-        const response = await fetch(`${API_BASE_URL}/items/${itemId}`);
+        const response = await fetch(`${API_BASE_URL}/rentals/${rentalId}`);
 
         if (!response.ok) {
-            throw new Error('Failed to load item');
+            throw new Error('Failed to load rental');
         }
 
-        const item = await response.json();
+        const rental = await response.json();
 
-        document.getElementById('item-name').value = item.name;
-        document.getElementById('item-description').value = item.description || '';
+        document.getElementById('rental-name').value = rental.name;
+        document.getElementById('rental-description').value = rental.description || '';
     } catch (error) {
         showFormError(error.message);
     }
@@ -1060,79 +1060,79 @@ async function loadItemForEdit(itemId) {
 async function handleFormSubmit(e) {
     e.preventDefault();
 
-    const itemId = document.getElementById('item-id').value;
-    const itemData = {
-        name: document.getElementById('item-name').value.trim(),
-        description: document.getElementById('item-description').value.trim()
+    const rentalId = document.getElementById('rental-id').value;
+    const rentalData = {
+        name: document.getElementById('rental-name').value.trim(),
+        description: document.getElementById('rental-description').value.trim()
     };
 
     try {
-        if (itemId) {
-            await updateItem(itemId, itemData);
+        if (rentalId) {
+            await updateRental(rentalId, rentalData);
         } else {
-            await createItem(itemData);
+            await createRental(rentalData);
         }
 
-        // Navigate back to items list
+        // Navigate back to rentals list
         window.location.hash = '#/';
     } catch (error) {
         showFormError(error.message);
     }
 }
 
-// Create new item
-async function createItem(itemData) {
-    const response = await fetch(`${API_BASE_URL}/items`, {
+// Create new rental
+async function createRental(rentalData) {
+    const response = await fetch(`${API_BASE_URL}/rentals`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify(itemData)
+        body: JSON.stringify(rentalData)
     });
 
     if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Failed to create item');
+        throw new Error(error.error || 'Failed to create rental');
     }
 
     return response.json();
 }
 
-// Update existing item
-async function updateItem(id, itemData) {
-    const response = await fetch(`${API_BASE_URL}/items/${id}`, {
+// Update existing rental
+async function updateRental(id, rentalData) {
+    const response = await fetch(`${API_BASE_URL}/rentals/${id}`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify(itemData)
+        body: JSON.stringify(rentalData)
     });
 
     if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Failed to update item');
+        throw new Error(error.error || 'Failed to update rental');
     }
 
     return response.json();
 }
 
-// Delete item
-async function deleteItem(id) {
-    if (!confirm('Are you sure you want to delete this item?')) {
+// Delete rental
+async function deleteRental(id) {
+    if (!confirm('Are you sure you want to delete this rental?')) {
         return;
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}/items/${id}`, {
+        const response = await fetch(`${API_BASE_URL}/rentals/${id}`, {
             method: 'DELETE'
         });
 
         if (!response.ok) {
-            throw new Error('Failed to delete item');
+            throw new Error('Failed to delete rental');
         }
 
-        // Reload items list
-        await loadItems();
+        // Reload rentals list
+        await loadRentals();
     } catch (error) {
         showError(error.message);
     }
@@ -1184,12 +1184,12 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// Availability Calendar Functions (for Edit Item page)
-async function renderAvailabilityCalendar(itemId) {
+// Availability Calendar Functions (for Edit Rental page)
+async function renderAvailabilityCalendar(rentalId) {
     const container = document.getElementById('availability-calendar-container');
     if (!container) return;
 
-    availabilityCalendarState.itemId = itemId;
+    availabilityCalendarState.rentalId = rentalId;
 
     container.innerHTML = `
         <div class="calendar-card">
@@ -1212,7 +1212,7 @@ async function renderAvailabilityCalendar(itemId) {
 }
 
 async function loadAvailableDatesForMonth() {
-    const { currentMonth, currentYear, itemId } = availabilityCalendarState;
+    const { currentMonth, currentYear, rentalId } = availabilityCalendarState;
 
     const startDate = new Date(currentYear, currentMonth, 1);
     const endDate = new Date(currentYear, currentMonth + 1, 0);
@@ -1223,7 +1223,7 @@ async function loadAvailableDatesForMonth() {
     try {
         // Load available dates
         const availResponse = await fetch(
-            `${API_BASE_URL}/items/${itemId}/availability?startDate=${startDateStr}&endDate=${endDateStr}`
+            `${API_BASE_URL}/rentals/${rentalId}/availability?startDate=${startDateStr}&endDate=${endDateStr}`
         );
 
         if (availResponse.ok) {
@@ -1235,7 +1235,7 @@ async function loadAvailableDatesForMonth() {
 
         // Load reservations
         const resResponse = await fetch(
-            `${API_BASE_URL}/items/${itemId}/reservations?startDate=${startDateStr}&endDate=${endDateStr}`
+            `${API_BASE_URL}/rentals/${rentalId}/reservations?startDate=${startDateStr}&endDate=${endDateStr}`
         );
 
         if (resResponse.ok) {
@@ -1350,11 +1350,11 @@ function navigateAvailabilityCalendar(direction) {
 }
 
 async function toggleAvailability(dateStr) {
-    const { itemId, availableDates } = availabilityCalendarState;
+    const { rentalId, availableDates } = availabilityCalendarState;
     const isCurrentlyAvailable = availableDates.includes(dateStr);
 
     try {
-        const response = await fetch(`${API_BASE_URL}/items/${itemId}/availability`, {
+        const response = await fetch(`${API_BASE_URL}/rentals/${rentalId}/availability`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -1379,7 +1379,7 @@ async function toggleAvailability(dateStr) {
         renderAvailabilityGrid();
 
         // Refresh the availability summary
-        await loadAvailabilitySummary(itemId);
+        await loadAvailabilitySummary(rentalId);
 
     } catch (error) {
         alert('Error updating availability: ' + error.message);
@@ -1387,7 +1387,7 @@ async function toggleAvailability(dateStr) {
 }
 
 // Load and display availability summary
-async function loadAvailabilitySummary(itemId) {
+async function loadAvailabilitySummary(rentalId) {
     const summaryContainer = document.getElementById('availability-summary');
     if (!summaryContainer) return;
 
@@ -1403,8 +1403,8 @@ async function loadAvailabilitySummary(itemId) {
 
         // Load available dates and reservations
         const [availResponse, resResponse] = await Promise.all([
-            fetch(`${API_BASE_URL}/items/${itemId}/availability?startDate=${startDateStr}&endDate=${endDateStr}`),
-            fetch(`${API_BASE_URL}/items/${itemId}/reservations?startDate=${startDateStr}&endDate=${endDateStr}`)
+            fetch(`${API_BASE_URL}/rentals/${rentalId}/availability?startDate=${startDateStr}&endDate=${endDateStr}`),
+            fetch(`${API_BASE_URL}/rentals/${rentalId}/reservations?startDate=${startDateStr}&endDate=${endDateStr}`)
         ]);
 
         let availableDates = [];
@@ -1450,14 +1450,14 @@ async function loadAvailabilitySummary(itemId) {
 }
 
 // Open availability calendar modal
-async function openAvailabilityCalendarModal(itemId) {
+async function openAvailabilityCalendarModal(rentalId) {
     const modal = document.getElementById('availability-calendar-modal');
     if (!modal) return;
 
     modal.classList.add('active');
 
     // Render calendar inside modal
-    await renderAvailabilityCalendar(itemId);
+    await renderAvailabilityCalendar(rentalId);
 }
 
 // Close availability calendar modal
@@ -1475,7 +1475,7 @@ function closeAvailabilityCalendarModal() {
 
 // Calendar functions
 // Open calendar modal
-async function openCalendarModal(itemId) {
+async function openCalendarModal(rentalId) {
     const modal = document.getElementById('calendar-modal');
     if (!modal) return;
 
@@ -1484,7 +1484,7 @@ async function openCalendarModal(itemId) {
     // Render calendar inside modal
     const container = document.getElementById('calendar-container');
     if (container) {
-        await renderCalendar(itemId);
+        await renderCalendar(rentalId);
     }
 }
 
@@ -1515,7 +1515,7 @@ document.addEventListener('click', (e) => {
     }
 });
 
-async function renderCalendar(itemId) {
+async function renderCalendar(rentalId) {
     const calendarContainer = document.getElementById('calendar-container');
     if (!calendarContainer) return;
 
@@ -1542,7 +1542,7 @@ async function renderCalendar(itemId) {
 }
 
 async function loadReservationsForMonth() {
-    const { currentMonth, currentYear, itemId } = calendarState;
+    const { currentMonth, currentYear, rentalId } = calendarState;
 
     // Calculate date range for the month
     const startDate = new Date(currentYear, currentMonth, 1);
@@ -1554,8 +1554,8 @@ async function loadReservationsForMonth() {
     try {
         // Load both reservations and available dates
         const [reservationsRes, availabilityRes] = await Promise.all([
-            fetch(`${API_BASE_URL}/items/${itemId}/reservations?startDate=${startDateStr}&endDate=${endDateStr}`),
-            fetch(`${API_BASE_URL}/items/${itemId}/availability?startDate=${startDateStr}&endDate=${endDateStr}`)
+            fetch(`${API_BASE_URL}/rentals/${rentalId}/reservations?startDate=${startDateStr}&endDate=${endDateStr}`),
+            fetch(`${API_BASE_URL}/rentals/${rentalId}/availability?startDate=${startDateStr}&endDate=${endDateStr}`)
         ]);
 
         if (reservationsRes.ok) {
@@ -1653,7 +1653,7 @@ function renderCalendarGrid() {
             dayCell.classList.add('available');
             dayCell.innerHTML = `
                 <div style="font-size: 0.875rem; font-weight: 500; margin-bottom: 0.25rem;">${day}</div>
-                <a href="#/reservations/new/${calendarState.itemId}/${dateStr}"
+                <a href="#/reservations/new/${calendarState.rentalId}/${dateStr}"
                    class="calendar-reserve-link">
                     Reserve
                 </a>

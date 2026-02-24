@@ -36,29 +36,29 @@ def init_dynamodb_tables():
 
     tables = [
         {
-            'name': 'Items',
+            'name': 'Rentals',
             'key_schema': [{'AttributeName': 'id', 'KeyType': 'HASH'}],
             'attribute_definitions': [{'AttributeName': 'id', 'AttributeType': 'S'}]
         },
         {
             'name': 'Reservations',
             'key_schema': [
-                {'AttributeName': 'itemId', 'KeyType': 'HASH'},
+                {'AttributeName': 'rentalId', 'KeyType': 'HASH'},
                 {'AttributeName': 'date', 'KeyType': 'RANGE'}
             ],
             'attribute_definitions': [
-                {'AttributeName': 'itemId', 'AttributeType': 'S'},
+                {'AttributeName': 'rentalId', 'AttributeType': 'S'},
                 {'AttributeName': 'date', 'AttributeType': 'S'}
             ]
         },
         {
             'name': 'AvailableDates',
             'key_schema': [
-                {'AttributeName': 'itemId', 'KeyType': 'HASH'},
+                {'AttributeName': 'rentalId', 'KeyType': 'HASH'},
                 {'AttributeName': 'date', 'KeyType': 'RANGE'}
             ],
             'attribute_definitions': [
-                {'AttributeName': 'itemId', 'AttributeType': 'S'},
+                {'AttributeName': 'rentalId', 'AttributeType': 'S'},
                 {'AttributeName': 'date', 'AttributeType': 'S'}
             ]
         }
@@ -103,14 +103,14 @@ def create_lambda_event(method, path, body=None, path_params=None):
     return event
 
 
-@app.route('/items', methods=['GET', 'POST', 'OPTIONS'])
-def items():
+@app.route('/rentals', methods=['GET', 'POST', 'OPTIONS'])
+def rentals():
     if request.method == 'OPTIONS':
         return '', 204
 
     event = create_lambda_event(
         request.method,
-        '/items',
+        '/rentals',
         request.data.decode('utf-8') if request.data else None
     )
 
@@ -123,16 +123,16 @@ def items():
     )
 
 
-@app.route('/items/<item_id>', methods=['GET', 'PUT', 'DELETE', 'OPTIONS'])
-def item(item_id):
+@app.route('/rentals/<rental_id>', methods=['GET', 'PUT', 'DELETE', 'OPTIONS'])
+def rental(rental_id):
     if request.method == 'OPTIONS':
         return '', 204
 
     event = create_lambda_event(
         request.method,
-        f'/items/{item_id}',
+        f'/rentals/{rental_id}',
         request.data.decode('utf-8') if request.data else None,
-        {'id': item_id}
+        {'id': rental_id}
     )
 
     lambda_response = handler(event, None)
@@ -144,16 +144,16 @@ def item(item_id):
     )
 
 
-@app.route('/items/<item_id>/availability', methods=['GET', 'POST', 'OPTIONS'])
-def availability(item_id):
+@app.route('/rentals/<rental_id>/availability', methods=['GET', 'POST', 'OPTIONS'])
+def availability(rental_id):
     if request.method == 'OPTIONS':
         return '', 204
 
     event = create_lambda_event(
         request.method,
-        f'/items/{item_id}/availability',
+        f'/rentals/{rental_id}/availability',
         request.data.decode('utf-8') if request.data else None,
-        {'id': item_id}
+        {'id': rental_id}
     )
 
     lambda_response = handler(event, None)
@@ -165,16 +165,16 @@ def availability(item_id):
     )
 
 
-@app.route('/items/<item_id>/availability/<date>', methods=['DELETE', 'OPTIONS'])
-def availability_date(item_id, date):
+@app.route('/rentals/<rental_id>/availability/<date>', methods=['DELETE', 'OPTIONS'])
+def availability_date(rental_id, date):
     if request.method == 'OPTIONS':
         return '', 204
 
     event = create_lambda_event(
         request.method,
-        f'/items/{item_id}/availability/{date}',
+        f'/rentals/{rental_id}/availability/{date}',
         request.data.decode('utf-8') if request.data else None,
-        {'id': item_id, 'date': date}
+        {'id': rental_id, 'date': date}
     )
 
     lambda_response = handler(event, None)
@@ -186,16 +186,16 @@ def availability_date(item_id, date):
     )
 
 
-@app.route('/items/<item_id>/reservations', methods=['GET', 'POST', 'OPTIONS'])
-def reservations(item_id):
+@app.route('/rentals/<rental_id>/reservations', methods=['GET', 'POST', 'OPTIONS'])
+def reservations(rental_id):
     if request.method == 'OPTIONS':
         return '', 204
 
     event = create_lambda_event(
         request.method,
-        f'/items/{item_id}/reservations',
+        f'/rentals/{rental_id}/reservations',
         request.data.decode('utf-8') if request.data else None,
-        {'id': item_id}
+        {'id': rental_id}
     )
 
     lambda_response = handler(event, None)
@@ -207,16 +207,16 @@ def reservations(item_id):
     )
 
 
-@app.route('/items/<item_id>/reservations/<date>', methods=['DELETE', 'OPTIONS'])
-def reservation(item_id, date):
+@app.route('/rentals/<rental_id>/reservations/<date>', methods=['DELETE', 'OPTIONS'])
+def reservation(rental_id, date):
     if request.method == 'OPTIONS':
         return '', 204
 
     event = create_lambda_event(
         request.method,
-        f'/items/{item_id}/reservations/{date}',
+        f'/rentals/{rental_id}/reservations/{date}',
         request.data.decode('utf-8') if request.data else None,
-        {'id': item_id, 'date': date}
+        {'id': rental_id, 'date': date}
     )
 
     lambda_response = handler(event, None)

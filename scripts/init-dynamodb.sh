@@ -3,9 +3,9 @@
 echo "Waiting for DynamoDB Local to be ready..."
 sleep 5
 
-echo "Creating Items table..."
+echo "Creating Rentals table..."
 aws dynamodb create-table \
-    --table-name Items \
+    --table-name Rentals \
     --attribute-definitions AttributeName=id,AttributeType=S \
     --key-schema AttributeName=id,KeyType=HASH \
     --billing-mode PAY_PER_REQUEST \
@@ -13,19 +13,19 @@ aws dynamodb create-table \
     --region us-east-1
 
 if [ $? -eq 0 ]; then
-    echo "Items table created successfully!"
+    echo "Rentals table created successfully!"
 else
-    echo "Failed to create Items table (may already exist)"
+    echo "Failed to create Rentals table (may already exist)"
 fi
 
 echo "Creating Reservations table..."
 aws dynamodb create-table \
     --table-name Reservations \
     --attribute-definitions \
-        AttributeName=itemId,AttributeType=S \
+        AttributeName=rentalId,AttributeType=S \
         AttributeName=date,AttributeType=S \
     --key-schema \
-        AttributeName=itemId,KeyType=HASH \
+        AttributeName=rentalId,KeyType=HASH \
         AttributeName=date,KeyType=RANGE \
     --billing-mode PAY_PER_REQUEST \
     --endpoint-url http://dynamodb-local:8000 \
@@ -41,10 +41,10 @@ echo "Creating AvailableDates table..."
 aws dynamodb create-table \
     --table-name AvailableDates \
     --attribute-definitions \
-        AttributeName=itemId,AttributeType=S \
+        AttributeName=rentalId,AttributeType=S \
         AttributeName=date,AttributeType=S \
     --key-schema \
-        AttributeName=itemId,KeyType=HASH \
+        AttributeName=rentalId,KeyType=HASH \
         AttributeName=date,KeyType=RANGE \
     --billing-mode PAY_PER_REQUEST \
     --endpoint-url http://dynamodb-local:8000 \
