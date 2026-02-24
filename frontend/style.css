@@ -420,7 +420,7 @@ th.actions {
     text-decoration: underline;
 }
 
-/* Items Grid Layout */
+/* Rentals Grid Layout */
 .rentals-grid {
     display: flex;
     flex-direction: column;
@@ -463,7 +463,7 @@ th.actions {
     overflow: hidden;
 }
 
-/* Item View Page Styles */
+/* Rental View Page Styles */
 .rental-view-card {
     background: white;
     border-radius: 0.5rem;

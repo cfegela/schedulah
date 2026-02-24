@@ -986,7 +986,6 @@ async function deleteRentalFromEdit(id) {
 async function loadRentals() {
     const loadingDiv = document.getElementById('loading');
     const errorDiv = document.getElementById('error');
-    const itemsTable = document.getElementById('rentals-table');
     const emptyState = document.getElementById('empty-state');
 
     if (!loadingDiv) return;

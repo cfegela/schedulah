@@ -140,7 +140,7 @@ def update_rental(rental_id, body):
     if not update_expr:
         return response(400, {'error': 'No fields to update'})
 
-    response_data = table.update_rental(
+    response_data = table.update_item(
         Key={'id': rental_id},
         UpdateExpression='SET ' + ', '.join(update_expr),
         ExpressionAttributeValues=expr_attr_values,
@@ -194,8 +194,8 @@ def set_available_dates(rental_id, body):
         return response(400, {'error': 'At least one date is required'})
 
     # Verify rental exists
-    item_result = table.get_item(Key={'id': rental_id})
-    if 'Item' not in item_result:
+    rental_result = table.get_item(Key={'id': rental_id})
+    if 'Item' not in rental_result:
         return response(404, {'error': 'Rental not found'})
 
     try:
@@ -271,8 +271,8 @@ def create_reservation(rental_id, body):
         return response(400, {'error': 'reservedBy is required'})
 
     # Verify rental exists
-    item_result = table.get_item(Key={'id': rental_id})
-    if 'Item' not in item_result:
+    rental_result = table.get_item(Key={'id': rental_id})
+    if 'Item' not in rental_result:
         return response(404, {'error': 'Rental not found'})
 
     created_reservations = []
