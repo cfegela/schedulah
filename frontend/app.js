@@ -28,10 +28,11 @@ document.addEventListener('DOMContentLoaded', () => {
     initRouter();
 });
 
-// Simple hash-based router
+// HTML5 History API router
 function initRouter() {
-    function handleRoute() {
-        const hash = window.location.hash || '#/';
+    // Route handling function
+    window.handleRoute = function() {
+        const path = window.location.pathname;
         const viewContainer = document.getElementById('view-container');
 
         if (!viewContainer) return;
@@ -40,24 +41,24 @@ function initRouter() {
         updateActiveNavLink();
 
         // Route handling
-        if (hash === '#/' || hash === '#/rentals') {
+        if (path === '/' || path === '/rentals') {
             renderRentalsList();
-        } else if (hash === '#/rentals/new') {
+        } else if (path === '/rentals/new') {
             renderRentalForm('create');
-        } else if (hash.startsWith('#/rentals/edit/')) {
-            const rentalId = hash.split('/').pop();
+        } else if (path.startsWith('/rentals/edit/')) {
+            const rentalId = path.split('/').pop();
             renderRentalForm('edit', rentalId);
-        } else if (hash.startsWith('#/rentals/')) {
-            const rentalId = hash.split('/').pop();
+        } else if (path.startsWith('/rentals/')) {
+            const rentalId = path.split('/').pop();
             if (rentalId && rentalId !== 'new') {
                 renderRentalView(rentalId);
             } else {
                 renderRentalsList();
             }
-        } else if (hash === '#/reservations') {
+        } else if (path === '/reservations') {
             renderReservations();
-        } else if (hash.startsWith('#/reservations/new/')) {
-            const parts = hash.split('/');
+        } else if (path.startsWith('/reservations/new/')) {
+            const parts = path.split('/');
             const rentalId = parts[3];
             const date = parts[4];
             if (rentalId && date) {
@@ -65,8 +66,8 @@ function initRouter() {
             } else {
                 renderReservations();
             }
-        } else if (hash.startsWith('#/reservations/edit/')) {
-            const parts = hash.split('/');
+        } else if (path.startsWith('/reservations/edit/')) {
+            const parts = path.split('/');
             const rentalId = parts[3];
             const date = parts[4];
             if (rentalId && date) {
@@ -74,8 +75,8 @@ function initRouter() {
             } else {
                 renderReservations();
             }
-        } else if (hash.startsWith('#/reservations/')) {
-            const parts = hash.split('/');
+        } else if (path.startsWith('/reservations/')) {
+            const parts = path.split('/');
             const rentalId = parts[2];
             const date = parts[3];
             if (rentalId && date && parts[2] !== 'edit' && parts[2] !== 'new') {
@@ -83,29 +84,50 @@ function initRouter() {
             } else {
                 renderReservations();
             }
-        } else if (hash === '#/about') {
+        } else if (path === '/about') {
             renderAbout();
-        } else if (hash === '#/faq') {
+        } else if (path === '/faq') {
             renderFaq();
         } else {
             renderRentalsList();
         }
-    }
+    };
 
-    // Listen for hash changes
-    window.addEventListener('hashchange', handleRoute);
+    // Listen for popstate (browser back/forward buttons)
+    window.addEventListener('popstate', handleRoute);
+
+    // Global click interceptor for internal links
+    document.addEventListener('click', (e) => {
+        const link = e.target.closest('a');
+        if (!link) return;
+
+        const href = link.getAttribute('href');
+        if (!href) return;
+
+        // Only intercept internal links (starting with /)
+        if (href.startsWith('/') && !href.startsWith('//')) {
+            e.preventDefault();
+            navigateTo(href);
+        }
+    });
 
     // Initial route
     handleRoute();
 }
 
+// Helper function for programmatic navigation
+function navigateTo(path) {
+    history.pushState(null, '', path);
+    handleRoute();
+}
+
 function updateActiveNavLink() {
-    const hash = window.location.hash || '#/';
+    const path = window.location.pathname;
     const links = document.querySelectorAll('.navbar-link');
 
     links.forEach(link => {
         const href = link.getAttribute('href');
-        const isActive = href === hash || (href === '#/' && hash === '#/rentals');
+        const isActive = href === path || (href === '/' && path === '/rentals');
 
         if (isActive) {
             link.classList.add('active');
@@ -155,7 +177,7 @@ async function renderRentalsList() {
     viewContainer.innerHTML = `
         <div class="page-header">
             <h1 class="page-title">Rentals</h1>
-            <a href="#/rentals/new" class="btn btn-primary">Create New Rental</a>
+            <a href="/rentals/new" class="btn btn-primary">Create New Rental</a>
         </div>
 
         <div class="rentals-section">
@@ -164,7 +186,7 @@ async function renderRentalsList() {
             <div id="rentals-grid" class="rentals-grid" style="display: none;"></div>
             <div id="empty-state" style="display: none;" class="empty-state">
                 <p>No rentals yet. Create one to get started!</p>
-                <a href="#/rentals/new" class="btn btn-primary" style="margin-top: 1rem;">Create Your First Rental</a>
+                <a href="/rentals/new" class="btn btn-primary" style="margin-top: 1rem;">Create Your First Rental</a>
             </div>
         </div>
     `;
@@ -180,7 +202,7 @@ async function renderRentalForm(mode, rentalId = null) {
     viewContainer.innerHTML = `
         <div class="page-header">
             <h1 class="page-title">${isEdit ? 'Edit Rental' : 'Create New Rental'}</h1>
-            <a href="#/" class="btn btn-secondary">Back to Rentals</a>
+            <a href="/" class="btn btn-secondary">Back to Rentals</a>
         </div>
 
         <div class="form-section">
@@ -199,7 +221,7 @@ async function renderRentalForm(mode, rentalId = null) {
                     <button type="submit" class="btn btn-primary" id="submit-btn">
                         ${isEdit ? 'Update Rental' : 'Create Rental'}
                     </button>
-                    <a href="#/" class="btn btn-secondary">Cancel</a>
+                    <a href="/" class="btn btn-secondary">Cancel</a>
                 </div>
             </form>
         </div>
@@ -266,7 +288,7 @@ function renderAbout() {
     viewContainer.innerHTML = `
         <div class="page-header">
             <h1 class="page-title">About Schedulah</h1>
-            <a href="#/" class="btn btn-secondary">Back to Rentals</a>
+            <a href="/" class="btn btn-secondary">Back to Rentals</a>
         </div>
 
         <div class="form-section">
@@ -291,7 +313,7 @@ function renderAbout() {
             </ul>
 
             <div style="margin-top: 2rem;">
-                <a href="#/" class="btn btn-primary">Get Started</a>
+                <a href="/" class="btn btn-primary">Get Started</a>
             </div>
         </div>
     `;
@@ -304,7 +326,7 @@ function renderFaq() {
     viewContainer.innerHTML = `
         <div class="page-header">
             <h1 class="page-title">Frequently Asked Questions</h1>
-            <a href="#/" class="btn btn-secondary">Back to Rentals</a>
+            <a href="/" class="btn btn-secondary">Back to Rentals</a>
         </div>
 
         <div class="form-section">
@@ -342,7 +364,7 @@ function renderFaq() {
             <p>Currently, there's no built-in export feature. Data is stored locally in the DynamoDB container.</p>
 
             <div style="margin-top: 2rem;">
-                <a href="#/" class="btn btn-primary">Get Started</a>
+                <a href="/" class="btn btn-primary">Get Started</a>
             </div>
         </div>
     `;
@@ -455,16 +477,16 @@ function displayReservations(reservations) {
         row.innerHTML = `
             <td><strong>${formatDateDisplay(reservation.date)}</strong></td>
             <td>
-                <a href="#/rentals/${reservation.rentalId}" class="rental-name-link">
+                <a href="/rentals/${reservation.rentalId}" class="rental-name-link">
                     ${escapeHtml(reservation.rentalName)}
                 </a>
             </td>
             <td>${escapeHtml(reservation.reservedBy)}</td>
             <td class="actions">
-                <a href="#/reservations/${reservation.rentalId}/${reservation.date}" class="btn btn-secondary action-btn" title="View details">
+                <a href="/reservations/${reservation.rentalId}/${reservation.date}" class="btn btn-secondary action-btn" title="View details">
                     <img src="https://cdn.jsdelivr.net/npm/remixicon@4.8.0/icons/System/eye-fill.svg" alt="View" style="width: 20px; height: 20px; display: block;">
                 </a>
-                <a href="#/reservations/edit/${reservation.rentalId}/${reservation.date}" class="btn btn-secondary action-btn" title="Edit reservation">
+                <a href="/reservations/edit/${reservation.rentalId}/${reservation.date}" class="btn btn-secondary action-btn" title="Edit reservation">
                     <img src="https://cdn.jsdelivr.net/npm/remixicon@4.8.0/icons/Design/pencil-ai-fill.svg" alt="Edit" style="width: 20px; height: 20px; display: block;">
                 </a>
             </td>
@@ -480,7 +502,7 @@ async function renderCreateReservation(rentalId, date) {
     viewContainer.innerHTML = `
         <div class="page-header">
             <h1 class="page-title">Create Reservation</h1>
-            <a href="#/rentals/${rentalId}" class="btn btn-secondary">← Back to Rental</a>
+            <a href="/rentals/${rentalId}" class="btn btn-secondary">← Back to Rental</a>
         </div>
 
         <div id="loading" class="loading">Loading...</div>
@@ -507,7 +529,7 @@ async function renderCreateReservation(rentalId, date) {
                     </div>
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary">Create Reservation</button>
-                        <a href="#/rentals/${rentalId}" class="btn btn-secondary">Cancel</a>
+                        <a href="/rentals/${rentalId}" class="btn btn-secondary">Cancel</a>
                     </div>
                 </form>
             </div>
@@ -588,7 +610,7 @@ async function createReservation(rentalId, date) {
         }
 
         // Redirect back to rental view
-        window.location.hash = `#/rentals/${rentalId}`;
+        navigateTo(`/rentals/${rentalId}`);
 
     } catch (error) {
         alert('Error creating reservation: ' + error.message);
@@ -602,7 +624,7 @@ async function renderViewReservation(rentalId, date) {
     viewContainer.innerHTML = `
         <div class="page-header">
             <h1 class="page-title">Reservation Details</h1>
-            <a href="#/reservations" class="btn btn-secondary">← Back to Reservations</a>
+            <a href="/reservations" class="btn btn-secondary">← Back to Reservations</a>
         </div>
 
         <div id="loading" class="loading">Loading reservation details...</div>
@@ -613,7 +635,7 @@ async function renderViewReservation(rentalId, date) {
                 <div class="rental-view-header">
                     <h2 id="view-reservation-date"></h2>
                     <div class="rental-view-actions">
-                        <a href="#/reservations/edit/${rentalId}/${date}" class="btn btn-primary">Edit</a>
+                        <a href="/reservations/edit/${rentalId}/${date}" class="btn btn-primary">Edit</a>
                     </div>
                 </div>
 
@@ -676,7 +698,7 @@ async function loadReservationDetails(rentalId, date) {
 
         const rentalDiv = document.getElementById('view-reservation-rental');
         if (rentalDiv) {
-            rentalDiv.innerHTML = `<a href="#/rentals/${rentalId}" class="rental-name-link">${escapeHtml(rentalName)}</a>`;
+            rentalDiv.innerHTML = `<a href="/rentals/${rentalId}" class="rental-name-link">${escapeHtml(rentalName)}</a>`;
         }
 
         const reservedByDiv = document.getElementById('view-reservation-reserved-by');
@@ -708,7 +730,7 @@ async function renderEditReservation(rentalId, date) {
     viewContainer.innerHTML = `
         <div class="page-header">
             <h1 class="page-title">Edit Reservation</h1>
-            <a href="#/reservations" class="btn btn-secondary">← Back to Reservations</a>
+            <a href="/reservations" class="btn btn-secondary">← Back to Reservations</a>
         </div>
 
         <div id="loading" class="loading">Loading reservation...</div>
@@ -731,7 +753,7 @@ async function renderEditReservation(rentalId, date) {
                     </div>
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary">Save Changes</button>
-                        <a href="#/reservations" class="btn btn-secondary">Cancel</a>
+                        <a href="/reservations" class="btn btn-secondary">Cancel</a>
                     </div>
                 </form>
             </div>
@@ -845,7 +867,7 @@ async function saveReservationEdit(rentalId, date) {
         }
 
         // Redirect back to reservations list
-        window.location.hash = '#/reservations';
+        navigateTo('/reservations');
 
     } catch (error) {
         alert('Error updating reservation: ' + error.message);
@@ -868,7 +890,7 @@ async function deleteReservationFromEditPage(rentalId, date) {
         }
 
         // Redirect back to reservations list
-        window.location.hash = '#/reservations';
+        navigateTo('/reservations');
 
     } catch (error) {
         alert('Error deleting reservation: ' + error.message);
@@ -882,7 +904,7 @@ async function renderRentalView(rentalId) {
     viewContainer.innerHTML = `
         <div class="page-header">
             <h1 class="page-title">Rental Details</h1>
-            <a href="#/" class="btn btn-secondary">Back to Rentals</a>
+            <a href="/" class="btn btn-secondary">Back to Rentals</a>
         </div>
 
         <div id="loading" class="loading">Loading rental details...</div>
@@ -894,7 +916,7 @@ async function renderRentalView(rentalId) {
                     <h2 id="view-rental-name"></h2>
                     <div class="rental-view-actions">
                         <button onclick="openCalendarModal('${rentalId}')" class="btn btn-primary">Check Availability</button>
-                        <a href="#/rentals/edit/${rentalId}" class="btn btn-secondary">Edit</a>
+                        <a href="/rentals/edit/${rentalId}" class="btn btn-secondary">Edit</a>
                     </div>
                 </div>
 
@@ -972,7 +994,7 @@ async function deleteRentalFromEdit(id) {
         }
 
         // Navigate back to rentals list
-        window.location.hash = '#/';
+        navigateTo('/');
     } catch (error) {
         const errorDiv = document.getElementById('form-error');
         if (errorDiv) {
@@ -1027,7 +1049,7 @@ function displayRentals(rentals) {
 
     rentals.forEach(rental => {
         const card = document.createElement('a');
-        card.href = `#/rentals/${rental.id}`;
+        card.href = `/rentals/${rental.id}`;
         card.className = 'rental-card';
         card.innerHTML = `
             <h3 class="rental-card-name">${escapeHtml(rental.name)}</h3>
@@ -1073,7 +1095,7 @@ async function handleFormSubmit(e) {
         }
 
         // Navigate back to rentals list
-        window.location.hash = '#/';
+        navigateTo('/');
     } catch (error) {
         showFormError(error.message);
     }
@@ -1652,7 +1674,7 @@ function renderCalendarGrid() {
             dayCell.classList.add('available');
             dayCell.innerHTML = `
                 <div style="font-size: 0.875rem; font-weight: 500; margin-bottom: 0.25rem;">${day}</div>
-                <a href="#/reservations/new/${calendarState.rentalId}/${dateStr}"
+                <a href="/reservations/new/${calendarState.rentalId}/${dateStr}"
                    class="calendar-reserve-link">
                     Reserve
                 </a>
