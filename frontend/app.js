@@ -353,7 +353,7 @@ function renderFaq() {
             <p>Click "Reservations" in the navigation menu to see a list of all reservations across all rentals.</p>
 
             <h3 style="margin-top: 2rem;">How do I edit or cancel a reservation?</h3>
-            <p>From the reservations list, click the eye icon to view the reservation, then click "Edit". You can update the details or scroll to the Danger Zone to delete the reservation.</p>
+            <p>From the reservations list, click "Details" to see the reservation details, then click "Edit". You can update the details or scroll to the Danger Zone to delete the reservation.</p>
 
             <h2 style="margin-top: 2.5rem;">Data & Storage</h2>
 
@@ -382,18 +382,7 @@ async function renderReservations() {
         <div class="rentals-section">
             <div id="loading" class="loading">Loading reservations...</div>
             <div id="error" class="error" style="display: none;"></div>
-            <table id="reservations-table" style="display: none;">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Rental</th>
-                        <th>Reserved By</th>
-                        <th class="actions">Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="reservations-tbody">
-                </tbody>
-            </table>
+            <div id="reservations-grid" class="rentals-grid" style="display: none;"></div>
             <div id="empty-state" style="display: none;" class="empty-state">
                 <p>No reservations yet.</p>
             </div>
@@ -407,7 +396,7 @@ async function renderReservations() {
 async function loadAllReservations() {
     const loadingDiv = document.getElementById('loading');
     const errorDiv = document.getElementById('error');
-    const reservationsTable = document.getElementById('reservations-table');
+    const reservationsGrid = document.getElementById('reservations-grid');
     const emptyState = document.getElementById('empty-state');
 
     try {
@@ -448,11 +437,11 @@ async function loadAllReservations() {
         if (loadingDiv) loadingDiv.style.display = 'none';
 
         if (allReservations.length === 0) {
-            reservationsTable.style.display = 'none';
+            reservationsGrid.style.display = 'none';
             emptyState.style.display = 'block';
         } else {
             displayReservations(allReservations);
-            reservationsTable.style.display = 'table';
+            reservationsGrid.style.display = 'grid';
             emptyState.style.display = 'none';
         }
 
@@ -465,33 +454,45 @@ async function loadAllReservations() {
     }
 }
 
-// Display reservations in table
+// Display reservations in card grid
 function displayReservations(reservations) {
-    const tbody = document.getElementById('reservations-tbody');
-    if (!tbody) return;
+    const reservationsGrid = document.getElementById('reservations-grid');
+    if (!reservationsGrid) return;
 
-    tbody.innerHTML = '';
+    reservationsGrid.innerHTML = '';
 
     reservations.forEach(reservation => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td><strong>${formatDateDisplay(reservation.date)}</strong></td>
-            <td>
-                <a href="/rentals/${reservation.rentalId}" class="rental-name-link">
-                    ${escapeHtml(reservation.rentalName)}
+        const card = document.createElement('div');
+        card.className = 'rental-card';
+        card.style.cursor = 'default';
+        card.innerHTML = `
+            <div style="margin-bottom: 1rem;">
+                <h3 class="rental-card-name" style="margin-bottom: 0.75rem;">${formatDateDisplay(reservation.date)}</h3>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.875rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="color: var(--text-secondary); min-width: 80px;">Rental:</span>
+                        <a href="/rentals/${reservation.rentalId}" class="rental-name-link" style="font-weight: 500;">
+                            ${escapeHtml(reservation.rentalName)}
+                        </a>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="color: var(--text-secondary); min-width: 80px;">Reserved by:</span>
+                        <span style="font-weight: 500;">${escapeHtml(reservation.reservedBy)}</span>
+                    </div>
+                </div>
+            </div>
+            <div style="display: flex; gap: 0.5rem; padding-top: 1rem; border-top: 1px solid var(--border);">
+                <a href="/reservations/${reservation.rentalId}/${reservation.date}" class="btn btn-secondary" title="View details" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                    <img src="https://cdn.jsdelivr.net/npm/remixicon@4.8.0/icons/System/eye-fill.svg" alt="Details" style="width: 18px; height: 18px;">
+                    <span>Details</span>
                 </a>
-            </td>
-            <td>${escapeHtml(reservation.reservedBy)}</td>
-            <td class="actions">
-                <a href="/reservations/${reservation.rentalId}/${reservation.date}" class="btn btn-secondary action-btn" title="View details">
-                    <img src="https://cdn.jsdelivr.net/npm/remixicon@4.8.0/icons/System/eye-fill.svg" alt="View" style="width: 20px; height: 20px; display: block;">
+                <a href="/reservations/edit/${reservation.rentalId}/${reservation.date}" class="btn btn-secondary" title="Edit reservation" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                    <img src="https://cdn.jsdelivr.net/npm/remixicon@4.8.0/icons/Design/pencil-ai-fill.svg" alt="Edit" style="width: 18px; height: 18px;">
+                    <span>Edit</span>
                 </a>
-                <a href="/reservations/edit/${reservation.rentalId}/${reservation.date}" class="btn btn-secondary action-btn" title="Edit reservation">
-                    <img src="https://cdn.jsdelivr.net/npm/remixicon@4.8.0/icons/Design/pencil-ai-fill.svg" alt="Edit" style="width: 20px; height: 20px; display: block;">
-                </a>
-            </td>
+            </div>
         `;
-        tbody.appendChild(row);
+        reservationsGrid.appendChild(card);
     });
 }
 
@@ -1048,12 +1049,24 @@ function displayRentals(rentals) {
     emptyState.style.display = 'none';
 
     rentals.forEach(rental => {
-        const card = document.createElement('a');
-        card.href = `/rentals/${rental.id}`;
+        const card = document.createElement('div');
         card.className = 'rental-card';
+        card.style.cursor = 'default';
         card.innerHTML = `
-            <h3 class="rental-card-name">${escapeHtml(rental.name)}</h3>
-            ${rental.description ? `<p class="rental-card-description">${escapeHtml(rental.description)}</p>` : ''}
+            <div style="margin-bottom: 1rem;">
+                <h3 class="rental-card-name" style="margin-bottom: 0.75rem;">${escapeHtml(rental.name)}</h3>
+                ${rental.description ? `<p class="rental-card-description" style="margin: 0; font-size: 0.875rem; color: var(--text-secondary); line-height: 1.5;">${escapeHtml(rental.description)}</p>` : '<p style="margin: 0; font-size: 0.875rem; color: var(--text-secondary); font-style: italic;">No description</p>'}
+            </div>
+            <div style="display: flex; gap: 0.5rem; padding-top: 1rem; border-top: 1px solid var(--border);">
+                <a href="/rentals/${rental.id}" class="btn btn-secondary" title="View details" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                    <img src="https://cdn.jsdelivr.net/npm/remixicon@4.8.0/icons/System/eye-fill.svg" alt="Details" style="width: 18px; height: 18px;">
+                    <span>Details</span>
+                </a>
+                <a href="/rentals/edit/${rental.id}" class="btn btn-secondary" title="Edit rental" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                    <img src="https://cdn.jsdelivr.net/npm/remixicon@4.8.0/icons/Design/pencil-ai-fill.svg" alt="Edit" style="width: 18px; height: 18px;">
+                    <span>Edit</span>
+                </a>
+            </div>
         `;
         rentalsGrid.appendChild(card);
     });

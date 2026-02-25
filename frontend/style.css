@@ -434,15 +434,8 @@ th.actions {
     padding: 1.5rem;
     text-decoration: none;
     color: var(--text-primary);
-    transition: all 0.2s;
     box-shadow: var(--shadow);
     display: block;
-}
-
-.rental-card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-lg);
-    border-color: var(--primary);
 }
 
 .rental-card-name {

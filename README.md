@@ -53,9 +53,11 @@ schedulah/
 
 | Service | Port | Description |
 |---------|------|-------------|
-| `frontend` | 8080 | Nginx serving the static HTML/JS/CSS |
+| `frontend` | 8080 | Nginx serving the static HTML/JS/CSS with clean URL support |
 | `api` | 5000 | Flask app wrapping the Lambda handler (auto-creates DynamoDB tables on startup) |
 | `dynamodb-local` | 8000 | Local DynamoDB instance with persistent storage |
+
+**Note:** The Nginx configuration includes `try_files $uri $uri/ /index.html;` which serves `index.html` for all non-file paths, enabling clean URL routing with the HTML5 History API.
 
 ## API Endpoints
 
@@ -114,7 +116,8 @@ All API requests are proxied through Nginx at `/api/*`:
 
 ### User Interface
 - **Professional header and navbar** with mobile-responsive hamburger menu
-- **Multi-page navigation** with hash-based routing (About, FAQ, Rentals, Reservations)
+- **Clean URLs** with HTML5 History API routing (About, FAQ, Rentals, Reservations)
+- **Card-based layouts** for modern, scannable rental and reservation lists
 - **Icon-based actions** using Remix Icons for clean, modern UI
 - **Responsive design** that works on desktop, tablet, and mobile
 - **Client-side routing** - no page reloads, instant navigation
@@ -123,7 +126,8 @@ All API requests are proxied through Nginx at `/api/*`:
 - **Custom calendar UI** - Built from scratch without external libraries
 
 ### Rental Management
-- **View rentals list** - Clean table with name, description, and icon actions
+- **View rentals list** - Modern card grid showing rental name and description
+- **Clickable rental cards** - Click any card to view full rental details
 - **View rental details** - Dedicated page with "Check Availability" button
 - **Check availability modal** - Click button to open calendar in responsive modal popup
 - **Create new rentals** - Dedicated form page with validation
@@ -136,7 +140,8 @@ All API requests are proxied through Nginx at `/api/*`:
 - **Create reservations** - Click "Reserve" link on available dates in calendar modal
 - **Dedicated reservation form** - Separate page with rental name, date, and reservation details
 - **Single-day reservations** - One date per reservation for simplicity
-- **View all reservations** - Table view showing date, rental, reserved by, with view/edit icons
+- **View all reservations** - Modern card grid showing date, rental, reserved by, with View/Edit buttons
+- **Reservation cards** - Each card displays date as heading with rental and reserved by info
 - **View reservation details** - Dedicated page showing reservation information
 - **Edit reservations** - Update reserved by name and notes
 - **Delete reservations** - Available on edit page in Danger Zone with confirmation
@@ -144,6 +149,7 @@ All API requests are proxied through Nginx at `/api/*`:
 
 ### Technical Features
 - **RESTful API** with Python Lambda handlers (AWS-deployable)
+- **HTML5 History API** routing with clean URLs (`/about` instead of `#/about`)
 - **DynamoDB Local** with persistent storage across container restarts
 - **Automatic table initialization** - API creates tables on startup if they don't exist
 - **Three-table design** - Rentals, Reservations, AvailableDates with composite keys
@@ -163,21 +169,21 @@ The Lambda handler in `api/handler.py` is AWS-deployable. For local development,
 The frontend is pure HTML, CSS, and vanilla JavaScript with no build step required. Edit files in `frontend/` and refresh your browser.
 
 **Pages:**
-- `#/about` - About page with application information
-- `#/faq` - Frequently Asked Questions
-- `/` or `#/rentals` - Rentals list with table view and icon actions
-- `#/rentals/{id}` - View rental details with "Check Availability" button (opens calendar modal)
-- `#/rentals/new` - Create new rental form
-- `#/rentals/edit/{id}` - Edit rental form with availability summary, "Set Available Dates" button (opens modal calendar), and delete in Danger Zone
-- `#/reservations` - Reservations list with table view and icon actions
-- `#/reservations/new/{rentalId}/{date}` - Create reservation form
-- `#/reservations/{rentalId}/{date}` - View reservation details
-- `#/reservations/edit/{rentalId}/{date}` - Edit reservation form with delete in Danger Zone
+- `/about` - About page with application information
+- `/faq` - Frequently Asked Questions
+- `/` or `/rentals` - Rentals list with card grid layout
+- `/rentals/{id}` - View rental details with "Check Availability" button (opens calendar modal)
+- `/rentals/new` - Create new rental form
+- `/rentals/edit/{id}` - Edit rental form with availability summary, "Set Available Dates" button (opens modal calendar), and delete in Danger Zone
+- `/reservations` - Reservations list with card grid layout showing View/Edit buttons
+- `/reservations/new/{rentalId}/{date}` - Create reservation form
+- `/reservations/{rentalId}/{date}` - View reservation details
+- `/reservations/edit/{rentalId}/{date}` - Edit reservation form with delete in Danger Zone
 
 **Navigation Flow:**
 ```
-Rentals List
-  ├─ Click rental name or view icon → View Rental
+Rentals List (Card Grid)
+  ├─ Click rental card → View Rental
   │   ├─ Click "Check Availability" button → Modal calendar opens
   │   │   ├─ Click "Reserve" link on available date → Create Reservation form
   │   │   │   ├─ Fill form and submit → Return to rental view
@@ -191,28 +197,20 @@ Rentals List
   │       ├─ Update Rental → Save and return to list
   │       ├─ Danger Zone: Delete Rental → Confirm and return to list
   │       └─ Cancel → Return to list
-  ├─ Click edit icon → Edit Rental
-  │   ├─ Availability Summary (shows available and reserved dates)
-  │   ├─ Click "Set Available Dates" button → Modal calendar opens
-  │   │   ├─ Toggle dates (green = available)
-  │   │   └─ Close modal (× or click outside) → Summary refreshes
-  │   ├─ Update Rental → Save and return to list
-  │   ├─ Danger Zone: Delete Rental → Confirm and return to list
-  │   └─ Cancel → Return to list
   └─ Click Create New Rental → Create Form
       ├─ Create Rental → Save and return to list
       └─ Cancel → Return to list
 
-Reservations List
-  ├─ Click view icon → View Reservation
+Reservations List (Card Grid)
+  ├─ Click View button on card → View Reservation
   │   └─ Click Edit button → Edit Reservation
   │       ├─ Update reservation → Save and return to list
   │       ├─ Danger Zone: Delete Reservation → Confirm and return to list
   │       └─ Cancel → Return to list
-  └─ Click edit icon → Edit Reservation (same as above)
+  └─ Click Edit button on card → Edit Reservation (same as above)
 ```
 
-The app uses hash-based routing for client-side navigation without page reloads. All navigation is handled via URL hash changes, providing full browser history support.
+The app uses HTML5 History API for client-side routing with clean URLs. All navigation is handled via `history.pushState()` without page reloads, providing full browser history support and professional-looking URLs.
 
 ### Database
 
