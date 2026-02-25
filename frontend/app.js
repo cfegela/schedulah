@@ -1272,7 +1272,9 @@ function displayRentals(rentals) {
         card.style.cursor = 'default';
         card.innerHTML = `
             <div style="margin-bottom: 1rem;">
-                <h3 class="rental-card-name" style="margin-bottom: 0.75rem;">${escapeHtml(rental.name)}</h3>
+                <h3 class="rental-card-name" style="margin-bottom: 0.75rem;">
+                    <a href="/rentals/${rental.id}" class="rental-name-link">${escapeHtml(rental.name)}</a>
+                </h3>
                 ${rental.description ? `<p class="rental-card-description" style="margin: 0; font-size: 0.875rem; color: var(--text-secondary); line-height: 1.5;">${escapeHtml(rental.description)}</p>` : '<p style="margin: 0; font-size: 0.875rem; color: var(--text-secondary); font-style: italic;">No description</p>'}
             </div>
             <div style="display: flex; gap: 0.5rem; padding-top: 1rem; border-top: 1px solid var(--border);">
@@ -1282,7 +1284,7 @@ function displayRentals(rentals) {
                 </a>
                 ${isAuthenticated ? `
                 <a href="/rentals/edit/${rental.id}" class="btn btn-secondary" title="Edit rental" style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
-                    <img src="https://cdn.jsdelivr.net/npm/remixicon@4.8.0/icons/Design/pencil-ai-fill.svg" alt="Edit" style="width: 18px; height: 18px; filter: brightness(0) invert(1);">
+                    <img src="https://cdn.jsdelivr.net/npm/remixicon@4.8.0/icons/Design/pencil-ai-fill.svg" alt="Edit" style="width: 18px; height: 18px;">
                     <span>Edit</span>
                 </a>
                 ` : ''}
