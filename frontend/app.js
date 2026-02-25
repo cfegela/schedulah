@@ -1,5 +1,9 @@
 const API_BASE_URL = '/api';
 
+// Authentication state
+let authToken = null;
+let isAuthenticated = false;
+
 // State
 let currentRental = null;
 
@@ -22,9 +26,82 @@ let availabilityCalendarState = {
     rentalId: null
 };
 
+// Authentication helpers
+function getAuthToken() {
+    return localStorage.getItem('authToken');
+}
+
+function setAuthToken(token) {
+    localStorage.setItem('authToken', token);
+    authToken = token;
+    isAuthenticated = true;
+}
+
+function clearAuthToken() {
+    localStorage.removeItem('authToken');
+    authToken = null;
+    isAuthenticated = false;
+}
+
+function checkAuth() {
+    const token = getAuthToken();
+    if (token) {
+        authToken = token;
+        isAuthenticated = true;
+    }
+}
+
+function logout() {
+    clearAuthToken();
+    navigateTo('/');
+    updateNavbar();
+}
+
+function updateNavbar() {
+    const reservationsLink = document.getElementById('reservations-link');
+    const loginLink = document.getElementById('login-link');
+    const logoutBtn = document.getElementById('logout-btn');
+
+    if (reservationsLink) {
+        reservationsLink.style.display = isAuthenticated ? 'block' : 'none';
+    }
+
+    if (loginLink) {
+        loginLink.style.display = isAuthenticated ? 'none' : 'block';
+    }
+
+    if (logoutBtn) {
+        logoutBtn.style.display = isAuthenticated ? 'block' : 'none';
+    }
+}
+
+// Fetch wrapper that adds auth token
+async function authenticatedFetch(url, options = {}) {
+    const token = getAuthToken();
+    if (token) {
+        options.headers = {
+            ...options.headers,
+            'Authorization': `Bearer ${token}`
+        };
+    }
+
+    const response = await fetch(url, options);
+
+    // Handle 401 Unauthorized
+    if (response.status === 401) {
+        clearAuthToken();
+        navigateTo('/login');
+        return response;
+    }
+
+    return response;
+}
+
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
+    checkAuth();
     initNavbar();
+    updateNavbar();
     initRouter();
 });
 
@@ -37,15 +114,31 @@ function initRouter() {
 
         if (!viewContainer) return;
 
+        // Show/hide navbar based on route
+        const navbar = document.getElementById('navbar');
+        if (navbar) {
+            navbar.style.display = path === '/login' ? 'none' : 'block';
+        }
+
         // Update active nav link
         updateActiveNavLink();
 
         // Route handling
-        if (path === '/' || path === '/rentals') {
+        if (path === '/login') {
+            renderLogin();
+        } else if (path === '/' || path === '/rentals') {
             renderRentalsList();
         } else if (path === '/rentals/new') {
+            if (!isAuthenticated) {
+                navigateTo('/login');
+                return;
+            }
             renderRentalForm('create');
         } else if (path.startsWith('/rentals/edit/')) {
+            if (!isAuthenticated) {
+                navigateTo('/login');
+                return;
+            }
             const rentalId = path.split('/').pop();
             renderRentalForm('edit', rentalId);
         } else if (path.startsWith('/rentals/')) {
@@ -56,8 +149,16 @@ function initRouter() {
                 renderRentalsList();
             }
         } else if (path === '/reservations') {
+            if (!isAuthenticated) {
+                navigateTo('/login');
+                return;
+            }
             renderReservations();
         } else if (path.startsWith('/reservations/new/')) {
+            if (!isAuthenticated) {
+                navigateTo('/login');
+                return;
+            }
             const parts = path.split('/');
             const rentalId = parts[3];
             const date = parts[4];
@@ -67,6 +168,10 @@ function initRouter() {
                 renderReservations();
             }
         } else if (path.startsWith('/reservations/edit/')) {
+            if (!isAuthenticated) {
+                navigateTo('/login');
+                return;
+            }
             const parts = path.split('/');
             const rentalId = parts[3];
             const date = parts[4];
@@ -76,6 +181,10 @@ function initRouter() {
                 renderReservations();
             }
         } else if (path.startsWith('/reservations/')) {
+            if (!isAuthenticated) {
+                navigateTo('/login');
+                return;
+            }
             const parts = path.split('/');
             const rentalId = parts[2];
             const date = parts[3];
@@ -177,7 +286,7 @@ async function renderRentalsList() {
     viewContainer.innerHTML = `
         <div class="page-header">
             <h1 class="page-title">Rentals</h1>
-            <a href="/rentals/new" class="btn btn-primary">Create New Rental</a>
+            ${isAuthenticated ? '<a href="/rentals/new" class="btn btn-primary">Create New Rental</a>' : ''}
         </div>
 
         <div class="rentals-section">
@@ -185,8 +294,8 @@ async function renderRentalsList() {
             <div id="error" class="error" style="display: none;"></div>
             <div id="rentals-grid" class="rentals-grid" style="display: none;"></div>
             <div id="empty-state" style="display: none;" class="empty-state">
-                <p>No rentals yet. Create one to get started!</p>
-                <a href="/rentals/new" class="btn btn-primary" style="margin-top: 1rem;">Create Your First Rental</a>
+                <p>No rentals yet.${isAuthenticated ? ' Create one to get started!' : ''}</p>
+                ${isAuthenticated ? '<a href="/rentals/new" class="btn btn-primary" style="margin-top: 1rem;">Create Your First Rental</a>' : ''}
             </div>
         </div>
     `;
@@ -370,6 +479,115 @@ function renderFaq() {
     `;
 }
 
+// Render Login Page
+function renderLogin() {
+    const viewContainer = document.getElementById('view-container');
+
+    viewContainer.innerHTML = `
+        <div class="login-container">
+            <div class="login-card">
+                <div class="login-header">
+                    <h1 class="login-title">Schedulah</h1>
+                    <p class="login-subtitle">Sign in to your account</p>
+                </div>
+                <form id="login-form">
+                    <div class="form-group">
+                        <label class="form-label" for="username">Username</label>
+                        <input
+                            type="text"
+                            id="username"
+                            class="form-input"
+                            required
+                            autofocus
+                            autocomplete="username"
+                            placeholder="admin"
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="password">Password</label>
+                        <input
+                            type="password"
+                            id="password"
+                            class="form-input"
+                            required
+                            autocomplete="current-password"
+                            placeholder="••••••••"
+                        >
+                    </div>
+                    <div id="login-error" class="form-error" style="display: none;"></div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">
+                        Sign In
+                    </button>
+                </form>
+            </div>
+        </div>
+    `;
+
+    const form = document.getElementById('login-form');
+    form.addEventListener('submit', handleLogin);
+}
+
+async function handleLogin(e) {
+    e.preventDefault();
+
+    const form = e.target;
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value.trim();
+    const errorDiv = document.getElementById('login-error');
+    const submitBtn = form.querySelector('button[type="submit"]');
+
+    if (!username || !password) {
+        return;
+    }
+
+    // Show loading state
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Signing in...';
+    errorDiv.style.display = 'none';
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/auth/login`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ username, password })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Login failed');
+        }
+
+        const data = await response.json();
+        setAuthToken(data.token);
+        updateNavbar();
+        navigateTo('/reservations');
+    } catch (error) {
+        // Display user-friendly error message
+        let errorText = 'Login failed. Please try again.';
+
+        if (error.message) {
+            const msg = error.message.toLowerCase();
+            if (msg.includes('invalid') || msg.includes('unauthorized')) {
+                errorText = 'Invalid username or password. Please check your credentials and try again.';
+            } else if (msg.includes('network') || msg.includes('fetch')) {
+                errorText = 'Unable to connect to server. Please check your connection and try again.';
+            } else {
+                errorText = error.message;
+            }
+        }
+
+        if (errorDiv) {
+            errorDiv.textContent = errorText;
+            errorDiv.style.display = 'block';
+        }
+
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Sign In';
+    }
+}
+
 // Render Reservations List View
 async function renderReservations() {
     const viewContainer = document.getElementById('view-container');
@@ -419,7 +637,7 @@ async function loadAllReservations() {
         // Then, get all reservations for each rental
         const allReservations = [];
         for (const rental of rentals) {
-            const resResponse = await fetch(`${API_BASE_URL}/rentals/${rental.id}/reservations`);
+            const resResponse = await authenticatedFetch(`${API_BASE_URL}/rentals/${rental.id}/reservations`);
             if (resResponse.ok) {
                 const reservations = await resResponse.json();
                 reservations.forEach(res => {
@@ -593,7 +811,7 @@ async function createReservation(rentalId, date) {
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}/rentals/${rentalId}/reservations`, {
+        const response = await authenticatedFetch(`${API_BASE_URL}/rentals/${rentalId}/reservations`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -673,7 +891,7 @@ async function loadReservationDetails(rentalId, date) {
         if (detailsDiv) detailsDiv.style.display = 'none';
 
         // Fetch reservation
-        const resResponse = await fetch(`${API_BASE_URL}/rentals/${rentalId}/reservations?startDate=${date}&endDate=${date}`);
+        const resResponse = await authenticatedFetch(`${API_BASE_URL}/rentals/${rentalId}/reservations?startDate=${date}&endDate=${date}`);
 
         if (!resResponse.ok) {
             throw new Error('Reservation not found');
@@ -790,7 +1008,7 @@ async function loadReservationForEdit(rentalId, date) {
         if (loadingDiv) loadingDiv.style.display = 'block';
         if (errorDiv) errorDiv.style.display = 'none';
 
-        const response = await fetch(`${API_BASE_URL}/rentals/${rentalId}/reservations?startDate=${date}&endDate=${date}`);
+        const response = await authenticatedFetch(`${API_BASE_URL}/rentals/${rentalId}/reservations?startDate=${date}&endDate=${date}`);
 
         if (!response.ok) {
             throw new Error('Failed to load reservation');
@@ -846,12 +1064,12 @@ async function saveReservationEdit(rentalId, date) {
 
     try {
         // Delete old reservation
-        await fetch(`${API_BASE_URL}/rentals/${rentalId}/reservations/${date}`, {
+        await authenticatedFetch(`${API_BASE_URL}/rentals/${rentalId}/reservations/${date}`, {
             method: 'DELETE'
         });
 
         // Create new reservation with updated data
-        const response = await fetch(`${API_BASE_URL}/rentals/${rentalId}/reservations`, {
+        const response = await authenticatedFetch(`${API_BASE_URL}/rentals/${rentalId}/reservations`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -882,7 +1100,7 @@ async function deleteReservationFromEditPage(rentalId, date) {
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}/rentals/${rentalId}/reservations/${date}`, {
+        const response = await authenticatedFetch(`${API_BASE_URL}/rentals/${rentalId}/reservations/${date}`, {
             method: 'DELETE'
         });
 
@@ -917,7 +1135,7 @@ async function renderRentalView(rentalId) {
                     <h2 id="view-rental-name"></h2>
                     <div class="rental-view-actions">
                         <button onclick="openCalendarModal('${rentalId}')" class="btn btn-primary">Check Availability</button>
-                        <a href="/rentals/edit/${rentalId}" class="btn btn-secondary">Edit</a>
+                        ${isAuthenticated ? `<a href="/rentals/edit/${rentalId}" class="btn btn-secondary">Edit</a>` : ''}
                     </div>
                 </div>
 
@@ -986,7 +1204,7 @@ async function deleteRentalFromEdit(id) {
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}/rentals/${id}`, {
+        const response = await authenticatedFetch(`${API_BASE_URL}/rentals/${id}`, {
             method: 'DELETE'
         });
 
@@ -1058,14 +1276,16 @@ function displayRentals(rentals) {
                 ${rental.description ? `<p class="rental-card-description" style="margin: 0; font-size: 0.875rem; color: var(--text-secondary); line-height: 1.5;">${escapeHtml(rental.description)}</p>` : '<p style="margin: 0; font-size: 0.875rem; color: var(--text-secondary); font-style: italic;">No description</p>'}
             </div>
             <div style="display: flex; gap: 0.5rem; padding-top: 1rem; border-top: 1px solid var(--border);">
-                <a href="/rentals/${rental.id}" class="btn btn-secondary" title="View details" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
-                    <img src="https://cdn.jsdelivr.net/npm/remixicon@4.8.0/icons/System/eye-fill.svg" alt="Details" style="width: 18px; height: 18px;">
+                <a href="/rentals/${rental.id}" class="btn btn-primary" title="View details" style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                    <img src="https://cdn.jsdelivr.net/npm/remixicon@4.8.0/icons/System/eye-fill.svg" alt="Details" style="width: 18px; height: 18px; filter: brightness(0) invert(1);">
                     <span>Details</span>
                 </a>
-                <a href="/rentals/edit/${rental.id}" class="btn btn-secondary" title="Edit rental" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
-                    <img src="https://cdn.jsdelivr.net/npm/remixicon@4.8.0/icons/Design/pencil-ai-fill.svg" alt="Edit" style="width: 18px; height: 18px;">
+                ${isAuthenticated ? `
+                <a href="/rentals/edit/${rental.id}" class="btn btn-secondary" title="Edit rental" style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                    <img src="https://cdn.jsdelivr.net/npm/remixicon@4.8.0/icons/Design/pencil-ai-fill.svg" alt="Edit" style="width: 18px; height: 18px; filter: brightness(0) invert(1);">
                     <span>Edit</span>
                 </a>
+                ` : ''}
             </div>
         `;
         rentalsGrid.appendChild(card);
@@ -1134,7 +1354,7 @@ async function createRental(rentalData) {
 
 // Update existing rental
 async function updateRental(id, rentalData) {
-    const response = await fetch(`${API_BASE_URL}/rentals/${id}`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/rentals/${id}`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json'
@@ -1157,7 +1377,7 @@ async function deleteRental(id) {
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}/rentals/${id}`, {
+        const response = await authenticatedFetch(`${API_BASE_URL}/rentals/${id}`, {
             method: 'DELETE'
         });
 
@@ -1388,7 +1608,7 @@ async function toggleAvailability(dateStr) {
     const isCurrentlyAvailable = availableDates.includes(dateStr);
 
     try {
-        const response = await fetch(`${API_BASE_URL}/rentals/${rentalId}/availability`, {
+        const response = await authenticatedFetch(`${API_BASE_URL}/rentals/${rentalId}/availability`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -1437,7 +1657,7 @@ async function loadAvailabilitySummary(rentalId) {
 
         // Load available dates and reservations
         const [availResponse, resResponse] = await Promise.all([
-            fetch(`${API_BASE_URL}/rentals/${rentalId}/availability?startDate=${startDateStr}&endDate=${endDateStr}`),
+            authenticatedFetch(`${API_BASE_URL}/rentals/${rentalId}/availability?startDate=${startDateStr}&endDate=${endDateStr}`),
             fetch(`${API_BASE_URL}/rentals/${rentalId}/reservations?startDate=${startDateStr}&endDate=${endDateStr}`)
         ]);
 
@@ -1589,7 +1809,7 @@ async function loadReservationsForMonth() {
         // Load both reservations and available dates
         const [reservationsRes, availabilityRes] = await Promise.all([
             fetch(`${API_BASE_URL}/rentals/${rentalId}/reservations?startDate=${startDateStr}&endDate=${endDateStr}`),
-            fetch(`${API_BASE_URL}/rentals/${rentalId}/availability?startDate=${startDateStr}&endDate=${endDateStr}`)
+            authenticatedFetch(`${API_BASE_URL}/rentals/${rentalId}/availability?startDate=${startDateStr}&endDate=${endDateStr}`)
         ]);
 
         if (reservationsRes.ok) {

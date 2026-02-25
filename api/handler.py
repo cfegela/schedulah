@@ -1,10 +1,13 @@
 import json
 import os
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 import boto3
 from decimal import Decimal
 from boto3.dynamodb.conditions import Key
+import jwt
+import bcrypt
+from functools import wraps
 
 # DynamoDB client
 dynamodb = boto3.resource(
@@ -19,12 +22,90 @@ table = dynamodb.Table('Rentals')
 reservations_table = dynamodb.Table('Reservations')
 available_dates_table = dynamodb.Table('AvailableDates')
 
+# Authentication configuration
+JWT_SECRET = os.environ.get('JWT_SECRET', 'your-secret-key-change-in-production')
+JWT_ALGORITHM = 'HS256'
+JWT_EXPIRATION_HOURS = 24
+
+# Admin credentials (username: admin, password: password123)
+ADMIN_USERNAME = 'admin'
+# Pre-hashed password for 'password123'
+ADMIN_PASSWORD_HASH = '$2b$12$qlw84fRc/fED/akvzttJG.dQzEyvLcrAyecQSxCQrqIevi.4hHXfO'
+
 
 class DecimalEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, Decimal):
             return float(obj)
         return super(DecimalEncoder, self).default(obj)
+
+
+def verify_token(event):
+    """Verify JWT token from Authorization header"""
+    headers = event.get('headers', {})
+    # Handle both lowercase and capitalized header names (API Gateway normalizes them)
+    auth_header = headers.get('Authorization') or headers.get('authorization')
+
+    if not auth_header:
+        return None
+
+    try:
+        # Extract token from "Bearer <token>"
+        if not auth_header.startswith('Bearer '):
+            return None
+
+        token = auth_header.split(' ')[1]
+
+        # Verify and decode token
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        return payload
+    except jwt.ExpiredSignatureError:
+        return None
+    except jwt.InvalidTokenError:
+        return None
+
+
+def require_auth(func):
+    """Decorator to require authentication for a function"""
+    @wraps(func)
+    def wrapper(event, *args, **kwargs):
+        payload = verify_token(event)
+        if not payload:
+            return response(401, {'error': 'Unauthorized'})
+        return func(*args, **kwargs)
+    return wrapper
+
+
+def login(body):
+    """Authenticate user and return JWT token"""
+    username = body.get('username', '').strip()
+    password = body.get('password', '').strip()
+
+    if not username or not password:
+        return response(400, {'error': 'Username and password are required'})
+
+    # Verify credentials
+    if username != ADMIN_USERNAME:
+        return response(401, {'error': 'Invalid credentials'})
+
+    # Verify password
+    if not bcrypt.checkpw(password.encode('utf-8'), ADMIN_PASSWORD_HASH.encode('utf-8')):
+        return response(401, {'error': 'Invalid credentials'})
+
+    # Generate JWT token
+    expiration = datetime.utcnow() + timedelta(hours=JWT_EXPIRATION_HOURS)
+    payload = {
+        'username': username,
+        'exp': expiration
+    }
+
+    token = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+    return response(200, {
+        'token': token,
+        'username': username,
+        'expiresAt': expiration.isoformat()
+    })
 
 
 def handler(event, context):
@@ -37,6 +118,22 @@ def handler(event, context):
     query_parameters = event.get('queryStringParameters') or {}
 
     try:
+        # Authentication route
+        if path == '/auth/login' and http_method == 'POST':
+            body = json.loads(event.get('body', '{}'))
+            return login(body)
+
+        # Verify authentication for protected routes
+        if not verify_token(event):
+            # Check if this is a protected route
+            is_protected = (
+                '/reservations' in path or
+                '/availability' in path or
+                (http_method in ['POST', 'PUT', 'DELETE'] and '/rentals' in path)
+            )
+            if is_protected:
+                return response(401, {'error': 'Unauthorized'})
+
         # Availability routes (must come before rental routes to prevent path conflicts)
         if '/availability' in path:
             rental_id = path_parameters.get('id')
@@ -333,7 +430,7 @@ def response(status_code, body):
         'headers': {
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Headers': 'Content-Type',
+            'Access-Control-Allow-Headers': 'Content-Type,Authorization',
             'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS'
         },
         'body': json.dumps(body, cls=DecimalEncoder)

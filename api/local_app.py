@@ -103,6 +103,26 @@ def create_lambda_event(method, path, body=None, path_params=None):
     return event
 
 
+@app.route('/auth/login', methods=['POST', 'OPTIONS'])
+def login():
+    if request.method == 'OPTIONS':
+        return '', 204
+
+    event = create_lambda_event(
+        request.method,
+        '/auth/login',
+        request.data.decode('utf-8') if request.data else None
+    )
+
+    lambda_response = handler(event, None)
+
+    return (
+        lambda_response['body'],
+        lambda_response['statusCode'],
+        lambda_response['headers']
+    )
+
+
 @app.route('/rentals', methods=['GET', 'POST', 'OPTIONS'])
 def rentals():
     if request.method == 'OPTIONS':

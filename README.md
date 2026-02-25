@@ -147,14 +147,25 @@ All API requests are proxied through Nginx at `/api/*`:
 - **Delete reservations** - Available on edit page in Danger Zone with confirmation
 - **Prevent double-booking** - Calendar shows reserved dates in gray, API enforces uniqueness
 
+### Authentication & Security
+- **JWT-based authentication** - Secure token-based authentication with 24-hour expiration
+- **Protected routes** - Reservations and rental management require admin login
+- **Clean login page** - Full-screen centered login with no navigation distractions
+- **Password hashing** - Bcrypt password hashing for secure credential storage
+- **Admin credentials** - Single admin account: `admin` / `password123`
+- **Auto-redirect** - Unauthenticated users redirected to login for protected pages
+- **Token persistence** - JWT stored in localStorage for session persistence
+- **Logout functionality** - Clear token and return to public pages
+
 ### Technical Features
 - **RESTful API** with Python Lambda handlers (AWS-deployable)
+- **JWT authentication** with PyJWT and bcrypt for secure access control
 - **HTML5 History API** routing with clean URLs (`/about` instead of `#/about`)
 - **DynamoDB Local** with persistent storage across container restarts
 - **Automatic table initialization** - API creates tables on startup if they don't exist
 - **Three-table design** - Rentals, Reservations, AvailableDates with composite keys
 - **Date range queries** - Efficient DynamoDB queries with BETWEEN conditions
-- **CORS enabled** for API access
+- **CORS enabled** for API access with Authorization header support
 - **Docker Compose** for easy local development (3 containers)
 - **No build step** - pure vanilla JavaScript
 
