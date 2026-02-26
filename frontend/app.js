@@ -700,11 +700,11 @@ function displayReservations(reservations) {
                 </div>
             </div>
             <div style="display: flex; gap: 0.5rem; padding-top: 1rem; border-top: 1px solid var(--border);">
-                <a href="/reservations/${reservation.rentalId}/${reservation.date}" class="btn btn-secondary" title="View details" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
-                    <img src="https://cdn.jsdelivr.net/npm/remixicon@4.8.0/icons/System/eye-fill.svg" alt="Details" style="width: 18px; height: 18px;">
+                <a href="/reservations/${reservation.rentalId}/${reservation.date}" class="btn btn-primary" title="View details" style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                    <img src="https://cdn.jsdelivr.net/npm/remixicon@4.8.0/icons/System/eye-fill.svg" alt="Details" style="width: 18px; height: 18px; filter: brightness(0) invert(1);">
                     <span>Details</span>
                 </a>
-                <a href="/reservations/edit/${reservation.rentalId}/${reservation.date}" class="btn btn-secondary" title="Edit reservation" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                <a href="/reservations/edit/${reservation.rentalId}/${reservation.date}" class="btn btn-secondary" title="Edit reservation" style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
                     <img src="https://cdn.jsdelivr.net/npm/remixicon@4.8.0/icons/Design/pencil-ai-fill.svg" alt="Edit" style="width: 18px; height: 18px;">
                     <span>Edit</span>
                 </a>
