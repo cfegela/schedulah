@@ -191,36 +191,6 @@ The frontend is pure HTML, CSS, and vanilla JavaScript with no build step requir
 - `/reservations/{rentalId}/{date}` - View reservation details
 - `/reservations/edit/{rentalId}/{date}` - Edit reservation form with delete in Danger Zone
 
-**Navigation Flow:**
-```
-Rentals List (Card Grid)
-  ├─ Click rental card → View Rental
-  │   ├─ Click "Check Availability" button → Modal calendar opens
-  │   │   ├─ Click "Reserve" link on available date → Create Reservation form
-  │   │   │   ├─ Fill form and submit → Return to rental view
-  │   │   │   └─ Cancel → Return to rental view
-  │   │   └─ Close modal (× or click outside) → Return to rental view
-  │   └─ Click Edit button → Edit Rental
-  │       ├─ Availability Summary (shows available and reserved dates)
-  │       ├─ Click "Set Available Dates" button → Modal calendar opens
-  │       │   ├─ Toggle dates (green = available)
-  │       │   └─ Close modal (× or click outside) → Summary refreshes
-  │       ├─ Update Rental → Save and return to list
-  │       ├─ Danger Zone: Delete Rental → Confirm and return to list
-  │       └─ Cancel → Return to list
-  └─ Click Create New Rental → Create Form
-      ├─ Create Rental → Save and return to list
-      └─ Cancel → Return to list
-
-Reservations List (Card Grid)
-  ├─ Click View button on card → View Reservation
-  │   └─ Click Edit button → Edit Reservation
-  │       ├─ Update reservation → Save and return to list
-  │       ├─ Danger Zone: Delete Reservation → Confirm and return to list
-  │       └─ Cancel → Return to list
-  └─ Click Edit button on card → Edit Reservation (same as above)
-```
-
 The app uses HTML5 History API for client-side routing with clean URLs. All navigation is handled via `history.pushState()` without page reloads, providing full browser history support and professional-looking URLs.
 
 ### Database
